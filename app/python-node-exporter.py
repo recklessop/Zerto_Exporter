@@ -48,11 +48,11 @@ def GetDataFunc():
         vmapi_json  = vmapi.json()
 
         for vm in vmapi_json :
-            metricsDictionary["vm_actualrpo{VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
-            metricsDictionary["vm_throughput_in_mb{VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
-            metricsDictionary["vm_iops{VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
-            metricsDictionary["vm_journal_used_storage_mb{VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
-            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
+            metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]VmIdentifier
+            metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
+            metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
+            metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
+            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
             #metricsDictionary["vm_actual_rpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
 
 
