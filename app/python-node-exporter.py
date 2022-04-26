@@ -62,10 +62,10 @@ def GetDataFunc():
         # open file to write new data
         file_object = open('metrics.txt', 'w')
         for item in metricsDictionary :
-            file_object.write("\n")
             file_object.write(item)
             file_object.write(" ")
             file_object.write(str(metricsDictionary[item]))
+            file_object.write("\n")
 
 
 # run GetDataFunc func in the background
