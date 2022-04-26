@@ -1,3 +1,154 @@
-
-Bitcoin_USD: 36141.7367
-Bitcoin_EUR: 32214.5033
+vpg_storage_used_in_mb{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 47184
+vpg_actual_rpo{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 11
+vpg_throughput_in_mb{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 0.01611328125
+vpg_iops{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 1
+vpg_provisioned_storage_in_mb{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 120997
+vpg_vms_count{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 2
+vpg_configured_rpo_seconds{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 300
+vpg_actual_history_in_minutes{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 7204
+vpg_configured_history_in_minutes{VpgIdentifier="509173e3-46e8-4de8-ac42-f142c7d273cf",VpgName="Test"} 7200
+vpg_storage_used_in_mb{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 439635
+vpg_actual_rpo{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 11
+vpg_throughput_in_mb{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 0.005859375
+vpg_iops{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 0
+vpg_provisioned_storage_in_mb{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 752991
+vpg_vms_count{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 17
+vpg_configured_rpo_seconds{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 300
+vpg_actual_history_in_minutes{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 1431
+vpg_configured_history_in_minutes{VpgIdentifier="1be5396d-1b4c-44a5-b001-39ee1fe658cb",VpgName="more vms"} 1440
+vpg_storage_used_in_mb{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 385356
+vpg_actual_rpo{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 11
+vpg_throughput_in_mb{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 0.02392578125
+vpg_iops{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 3
+vpg_provisioned_storage_in_mb{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 385356
+vpg_vms_count{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 4
+vpg_configured_rpo_seconds{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 300
+vpg_actual_history_in_minutes{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 1433
+vpg_configured_history_in_minutes{VpgIdentifier="62649221-ebea-444b-a667-3c6d3959b940",VpgName="Windows VMs"} 1440
+vpg_storage_used_in_mb{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 39072
+vpg_actual_rpo{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 5
+vpg_throughput_in_mb{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 0.0
+vpg_iops{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 0
+vpg_provisioned_storage_in_mb{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 39072
+vpg_vms_count{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 2
+vpg_configured_rpo_seconds{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 300
+vpg_actual_history_in_minutes{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 9430
+vpg_configured_history_in_minutes{VpgIdentifier="27f64c48-83c1-4e48-a9de-d9583156abee",VpgName="test123"} 120
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-58",VmName="Windows Server 4"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-58",VmName="Windows Server 4"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-58",VmName="Windows Server 4"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-58",VmName="Windows Server 4"} 2273
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-58",VmName="Windows Server 4"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1006",VmName="Debian-11-01"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1006",VmName="Debian-11-01"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1006",VmName="Debian-11-01"} 1
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1006",VmName="Debian-11-01"} 153505
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1006",VmName="Debian-11-01"} 0.00146484375
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1015",VmName="Red Hat Linux 10"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1015",VmName="Red Hat Linux 10"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1015",VmName="Red Hat Linux 10"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1015",VmName="Red Hat Linux 10"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1015",VmName="Red Hat Linux 10"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1014",VmName="Red Hat Linux 11"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1014",VmName="Red Hat Linux 11"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1014",VmName="Red Hat Linux 11"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1014",VmName="Red Hat Linux 11"} 115
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1014",VmName="Red Hat Linux 11"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-41",VmName="Red Hat Linux"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-41",VmName="Red Hat Linux"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-41",VmName="Red Hat Linux"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-41",VmName="Red Hat Linux"} 67
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-41",VmName="Red Hat Linux"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-37",VmName="Windows Server 8"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-37",VmName="Windows Server 8"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-37",VmName="Windows Server 8"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-37",VmName="Windows Server 8"} 897
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-37",VmName="Windows Server 8"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-45",VmName="Red Hat Linux 4"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-45",VmName="Red Hat Linux 4"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-45",VmName="Red Hat Linux 4"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-45",VmName="Red Hat Linux 4"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-45",VmName="Red Hat Linux 4"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-44",VmName="Red Hat Linux 3"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-44",VmName="Red Hat Linux 3"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-44",VmName="Red Hat Linux 3"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-44",VmName="Red Hat Linux 3"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-44",VmName="Red Hat Linux 3"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-46",VmName="Red Hat Linux 5"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-46",VmName="Red Hat Linux 5"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-46",VmName="Red Hat Linux 5"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-46",VmName="Red Hat Linux 5"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-46",VmName="Red Hat Linux 5"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-47",VmName="Red Hat Linux 6"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-47",VmName="Red Hat Linux 6"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-47",VmName="Red Hat Linux 6"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-47",VmName="Red Hat Linux 6"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-47",VmName="Red Hat Linux 6"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-43",VmName="Red Hat Linux 2"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-43",VmName="Red Hat Linux 2"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-43",VmName="Red Hat Linux 2"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-43",VmName="Red Hat Linux 2"} 130
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-43",VmName="Red Hat Linux 2"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-48",VmName="Red Hat Linux 7"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-48",VmName="Red Hat Linux 7"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-48",VmName="Red Hat Linux 7"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-48",VmName="Red Hat Linux 7"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-48",VmName="Red Hat Linux 7"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-53",VmName="Red Hat Linux 12"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-53",VmName="Red Hat Linux 12"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-53",VmName="Red Hat Linux 12"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-53",VmName="Red Hat Linux 12"} 81
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-53",VmName="Red Hat Linux 12"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-49",VmName="Red Hat Linux 8"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-49",VmName="Red Hat Linux 8"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-49",VmName="Red Hat Linux 8"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-49",VmName="Red Hat Linux 8"} 70
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-49",VmName="Red Hat Linux 8"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-57",VmName="Windows Server 3"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-57",VmName="Windows Server 3"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-57",VmName="Windows Server 3"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-57",VmName="Windows Server 3"} 721
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-57",VmName="Windows Server 3"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-60",VmName="Windows Server 9"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-60",VmName="Windows Server 9"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-60",VmName="Windows Server 9"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-60",VmName="Windows Server 9"} 689
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-60",VmName="Windows Server 9"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-59",VmName="Windows Server 5"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-59",VmName="Windows Server 5"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-59",VmName="Windows Server 5"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-59",VmName="Windows Server 5"} 769
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-59",VmName="Windows Server 5"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-67",VmName="Red Hat Linux 9"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-67",VmName="Red Hat Linux 9"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-67",VmName="Red Hat Linux 9"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-67",VmName="Red Hat Linux 9"} 68
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-67",VmName="Red Hat Linux 9"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-62",VmName="Windows Server 11"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-62",VmName="Windows Server 11"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-62",VmName="Windows Server 11"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-62",VmName="Windows Server 11"} 769
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-62",VmName="Windows Server 11"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-35",VmName="Windows Server 6"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-35",VmName="Windows Server 6"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-35",VmName="Windows Server 6"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-35",VmName="Windows Server 6"} 817
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-35",VmName="Windows Server 6"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-31",VmName="Windows Server 2"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-31",VmName="Windows Server 2"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-31",VmName="Windows Server 2"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-31",VmName="Windows Server 2"} 657
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-31",VmName="Windows Server 2"} 0.0
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-36",VmName="Windows Server 7"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-36",VmName="Windows Server 7"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-36",VmName="Windows Server 7"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-36",VmName="Windows Server 7"} 881
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-36",VmName="Windows Server 7"} 0.0009765625
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-30",VmName="Windows Server"} 11
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-30",VmName="Windows Server"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-30",VmName="Windows Server"} 3
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-30",VmName="Windows Server"} 833
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-30",VmName="Windows Server"} 0.0029296875
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1032",VmName="Red Hat Linux 11"} 5
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1032",VmName="Red Hat Linux 11"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-1032",VmName="Red Hat Linux 11"} 0
