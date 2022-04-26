@@ -49,7 +49,7 @@ def GetDataFunc():
 
         for vm in vmapi_json :
             metricsDictionary["vm_actualrpo{VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
-            metricsDictionary["vm_throughput_in_mb{VmName=" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
+            metricsDictionary["vm_throughput_in_mb{VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
             metricsDictionary["vm_iops{VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
             metricsDictionary["vm_journal_used_storage_mb{VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
             metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
