@@ -34,26 +34,26 @@ def GetDataFunc():
 
         metricsDictionary = {}
         for vpg in service_json :
-            metricsDictionary["vpgstorageusedinmb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["UsedStorageInMB"]
-            metricsDictionary["vpgactualrpo{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ActualRPO"]
-            metricsDictionary["vpgthroughputinmb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ThroughputInMB"]
-            metricsDictionary["vpgiops{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["IOPs"]
-            metricsDictionary["vpgprovisionedstorageinmb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ProvisionedStorageInMB"]
-            metricsDictionary["vpgvmscount{VpgIdentifier=\"" + vpg['VpgIdentifier'] + ",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["VmsCount"]
-            metricsDictionary["vpgconfiguredrposeconds{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ConfiguredRpoSeconds"]
-            metricsDictionary["vpgactualhistoryinminutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["HistoryStatusApi"]["ActualHistoryInMinutes"]
-            metricsDictionary["vpgconfiguredhistoryinminutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["HistoryStatusApi"]["ConfiguredHistoryInMinutes"]
+            metricsDictionary["vpg_storage_used_in_mb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["UsedStorageInMB"]
+            metricsDictionary["vpg_actual_rpo{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ActualRPO"]
+            metricsDictionary["vpg_throughput_in_mb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ThroughputInMB"]
+            metricsDictionary["vpg_iops{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["IOPs"]
+            metricsDictionary["vpg_provisioned_storage_in_mb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ProvisionedStorageInMB"]
+            metricsDictionary["vpg_vms_count{VpgIdentifier=\"" + vpg['VpgIdentifier'] + ",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["VmsCount"]
+            metricsDictionary["vpg_configured_rpo_seconds{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ConfiguredRpoSeconds"]
+            metricsDictionary["vpg_actual_history_in_minutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["HistoryStatusApi"]["ActualHistoryInMinutes"]
+            metricsDictionary["vpg_configured_history_in_minutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["HistoryStatusApi"]["ConfiguredHistoryInMinutes"]
 
         vmapi = requests.get("https://192.168.52.30/v1/vms/",timeout=3, headers=h2, verify=verifySSL)
         vmapi_json  = vmapi.json()
 
         for vm in vmapi_json :
-            metricsDictionary["vmactualrpo{VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
-            metricsDictionary["vmthroughputinmb{VmName=" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
-            metricsDictionary["vmiops{VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
-            metricsDictionary["vmjournalusedstoragemb{VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
-            metricsDictionary["vmoutgoingbandwidthinmbps{VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
-            #metricsDictionary["vmactualrpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
+            metricsDictionary["vm_actualrpo{VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
+            metricsDictionary["vm_throughput_in_mb{VmName=" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
+            metricsDictionary["vm_iops{VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
+            metricsDictionary["vm_journal_used_storage_mb{VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
+            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
+            #metricsDictionary["vm_actual_rpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
 
 
         # This function will get data every 5 seconds
