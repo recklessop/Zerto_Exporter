@@ -1,0 +1,14 @@
+vpg_storage_used_in_mb{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 20560
+vpg_actual_rpo{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 6
+vpg_throughput_in_mb{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 0.0
+vpg_iops{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 0
+vpg_provisioned_storage_in_mb{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 20560
+vpg_vms_count{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 1
+vpg_configured_rpo_seconds{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 300
+vpg_actual_history_in_minutes{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 660
+vpg_configured_history_in_minutes{VpgIdentifier="6c3ec8f0-bf40-4ac7-ae11-0c8a12756e05",VpgName="Loca-Rep"} 1440
+vm_actualrpo{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-56",VmName="Ansible"} 6
+vm_throughput_in_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-56",VmName="Ansible"} 0.0
+vm_iops{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-56",VmName="Ansible"} 0
+vm_journal_used_storage_mb{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-56",VmName="Ansible"} 625
+vm_outgoing_bandwidth_in_mbps{VmIdentifier="51331084-8a37-4250-b8ef-0f3c8b4f8d6a.vm-56",VmName="Ansible"} 0.0
