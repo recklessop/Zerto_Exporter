@@ -8,11 +8,13 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-verifySSL = os.environ['VERIFY_SSL']
+verifySSL = os.getenv("VERIFY_SSL", 'False').lower() in ('true', '1', 't')
 zvm_url = os.environ['ZVM_HOST']
 zvm_port = os.environ['ZVM_PORT']
 client_id = os.environ['CLIENT_ID']
 client_secret = os.environ['CLIENT_SECRET']
+
+print("Running with Variables:\nVerify SSL: " + os.environ['VERIFY_SSL'] + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
 
 def GetDataFunc():
     while True :
@@ -24,8 +26,8 @@ def GetDataFunc():
         d["client_secret"] = client_secret
         d["grant_type"] = "client_credentials"
 
-        uri = "https://" + zvm_url + ":" + zvm_ports + "/auth/realms/zerto/protocol/openid-connect/token"
-        response = requests.post(uri, data=d, headers=h, verify=verifySSL)
+        uri = "https://" + zvm_url + ":" + zvm_port + "/auth/realms/zerto/protocol/openid-connect/token"
+        response = requests.post(url=uri, data=d, headers=h, verify=verifySSL)
 
         token = response.json()
 
@@ -33,8 +35,8 @@ def GetDataFunc():
         h2["Accept"] = "application/json"
         h2["Authorization"] = "Bearer " + token['access_token']
 
-        uri = "https://" + zvm_url + ":" + zvm_ports + "/v1/vpgs/"
-        service = requests.get(uri, timeout=3, headers=h2, verify=verifySSL)
+        uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vpgs/"
+        service = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
         service_json  = service.json()
 
         metricsDictionary = {}
@@ -49,8 +51,8 @@ def GetDataFunc():
             metricsDictionary["vpg_actual_history_in_minutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["HistoryStatusApi"]["ActualHistoryInMinutes"]
             metricsDictionary["vpg_configured_history_in_minutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["HistoryStatusApi"]["ConfiguredHistoryInMinutes"]
 
-        uri = "https://" + zvm_url + ":" + zvm_ports + "/v1/vms/"
-        vmapi = requests.get(uri, timeout=3, headers=h2, verify=verifySSL)
+        uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
+        vmapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
         vmapi_json  = vmapi.json()
 
         for vm in vmapi_json :

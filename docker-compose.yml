@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.3"
    
 services:
   custom-exporter-in-python:
@@ -7,10 +7,10 @@ services:
     ports:
       - "9999:9999"
     environment:
-      - VERIFY_SSL="False"
-      - ZVM_HOST="192.168.52.30"
-      - ZVM_PORT="443"
-      - CLIENT_ID="my-zerto-client"
-      - CLIENT_SECRET="secret-key-here"
+      - VERIFY_SSL=False
+      - ZVM_HOST=192.168.52.30
+      - ZVM_PORT=443
+      - CLIENT_ID=zerto-exporter
+      - CLIENT_SECRET=37478287-e9c3-4732-b100-5f0a374636fa
     volumes:
       - "./app:/usr/src/app:rw"
