@@ -63,6 +63,18 @@ def GetDataFunc():
             metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
             #metricsDictionary["vm_actual_rpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
 
+        uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
+        volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
+        volapi_json  = volapi.json()
+
+        if(bool(volapi_json)){
+            for volume in volapi_json :
+                metricsDictionary["scratch_volume_size_used_in_bytes{ProtectedVM=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["UsedInBytes"]
+                metricsDictionary["scratch_volume_provisioned_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["ProvisionedInBytes"]
+                percentage_used = (volume["Size"]["UsedInBytes"] / volume["Size"]["ProvisionedInBytes"] * 100)
+                percentage_used = round(percentage_used, 1)
+                metricsDictionary["scratch_volume_percentage_used{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = percentage_used
+        }
 
         # This function will get data every 5 seconds
         time.sleep(5)
