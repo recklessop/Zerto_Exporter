@@ -59,9 +59,23 @@ def GetDataFunc():
             metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
             metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
             metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
+            metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["journalHardLimit"]["limitValue"]
             metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
             metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
             #metricsDictionary["vm_actual_rpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
+
+        uri = "https://" + zvm_url + ":" + zvm_port + "/v1/statistics/vms/"
+        statsapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+        statsapi_json  = statsapi.json()
+
+        for vm in statsapi_json :
+            metricsDictionary["vm_IoOperationsCounter{VmIdentifier=\"" + vm['VmIdentifier' + "\"}"] = vm["IoOperationsCounter"]
+            metricsDictionary["vm_WriteCounterInMBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["WriteCounterInMBs"]
+            metricsDictionary["vm_SyncCounterInMBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["SyncCounterInMBs"]
+            metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["NetworkTrafficCounterInMBs"]
+            metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["SampleTime"]
+            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["EncryptionStatistics"]["EncryptedDataInLBs"]
+            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["EncryptionStatistics"]["UnencryptedDataInLBs"]
 
         uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
         volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
@@ -70,6 +84,7 @@ def GetDataFunc():
         if(bool(volapi_json)):
             for volume in volapi_json :
                 #metricsDictionary["scratch_volume_provisioned_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["ProvisionedInBytes"]
+                # Determine the key for a given VM, then see if the key is already in the dictionary, if it is add the next disk to the total. If not, create a new key.
                 metrickey = "scratch_volume_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"
                 if (metrickey in metricsDictionary):
                     metricsDictionary[metrickey] = metricsDictionary[metrickey] + volume["Size"]["UsedInBytes"]
@@ -79,7 +94,7 @@ def GetDataFunc():
                 percentage_used = round(percentage_used, 1)
                 #metricsDictionary["scratch_volume_percentage_used{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = percentage_used
 
-        # This function will get data every 30 seconds
+        # This function will get data every 5 seconds
         time.sleep(5)
 
         # open file to write new data
@@ -95,7 +110,6 @@ def GetDataFunc():
 background_thread = Thread(target = GetDataFunc)
 background_thread.start()
 
-
 #----------------run http server on port 9999-----------------
 
 def WebServer():
@@ -106,7 +120,6 @@ def WebServer():
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
         print("serving at port", PORT)
         httpd.serve_forever()
-
 
 # run WebServer func in the background
 background_thread = Thread(target = WebServer)

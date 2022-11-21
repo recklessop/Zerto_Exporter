@@ -8,9 +8,9 @@ services:
       - "9999:9999"
     environment:
       - VERIFY_SSL=False
-      - ZVM_HOST=192.168.52.30
+      - ZVM_HOST=192.168.50.60
       - ZVM_PORT=443
-      - CLIENT_ID=zerto-exporter
-      - CLIENT_SECRET=37478287-e9c3-4732-b100-5f0a374636fa
+      - CLIENT_ID=zvm-exporter
+      - CLIENT_SECRET=BObEOBlXFoTdnKPjtEXTM0HCPxa1MGOj
     volumes:
       - "./app:/usr/src/app:rw"
