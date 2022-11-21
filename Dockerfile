@@ -4,6 +4,6 @@ EXPOSE 9999
 
 WORKDIR /usr/src/app
 
-COPY app/requirements.txt .
+COPY app/* /usr/src/app/
 
 RUN pip install --no-cache-dir -r requirements.txt

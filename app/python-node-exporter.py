@@ -59,7 +59,7 @@ def GetDataFunc():
             metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
             metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
             metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
-            metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["journalHardLimit"]["limitValue"]
+            metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
             metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
             metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
             #metricsDictionary["vm_actual_rpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
@@ -69,13 +69,13 @@ def GetDataFunc():
         statsapi_json  = statsapi.json()
 
         for vm in statsapi_json :
-            metricsDictionary["vm_IoOperationsCounter{VmIdentifier=\"" + vm['VmIdentifier' + "\"}"] = vm["IoOperationsCounter"]
+            metricsDictionary["vm_IoOperationsCounter{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["IoOperationsCounter"]
             metricsDictionary["vm_WriteCounterInMBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["WriteCounterInMBs"]
             metricsDictionary["vm_SyncCounterInMBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["SyncCounterInMBs"]
-            metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["NetworkTrafficCounterInMBs"]
-            metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["SampleTime"]
-            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["EncryptionStatistics"]["EncryptedDataInLBs"]
-            metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["EncryptionStatistics"]["UnencryptedDataInLBs"]
+            metricsDictionary["vm_NetworkTrafficCounterInMBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["NetworkTrafficCounterInMBs"]
+            #metricsDictionary["vm_SampleTime{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["SampleTime"]
+            metricsDictionary["vm_EncryptedDataInLBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["EncryptionStatistics"]["EncryptedDataInLBs"]
+            metricsDictionary["vm_UnencryptedDataInLBs{VmIdentifier=\"" + vm['VmIdentifier'] + "\"}"] = vm["EncryptionStatistics"]["UnencryptedDataInLBs"]
 
         uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
         volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
@@ -98,7 +98,7 @@ def GetDataFunc():
         time.sleep(5)
 
         # open file to write new data
-        file_object = open('metrics.txt', 'w')
+        file_object = open('metrics', 'w')
         for item in metricsDictionary :
             file_object.write(item)
             file_object.write(" ")
