@@ -1,4 +1,4 @@
-FROM python:3.11.0a7-slim
+FROM python:3.12.0a4-slim
 
 EXPOSE 9999
 
