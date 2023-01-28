@@ -21,16 +21,8 @@ stages:
       vmImage: ubuntu-latest
     steps:
     - task: Docker@2
-      displayName: Build an image
       inputs:
         containerRegistry: 'recklessop-docker-hub'
         repository: 'zerto-exporter'
-        command: 'build'
+        command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
-        tags: '$(tag)'
-    - task: Docker@2
-      inputs:
-        containerRegistry: 'recklessop-docker-hub'
-        repository: 'zerto-exporter'
-        command: 'push'
-        tags: '$(tag)'
