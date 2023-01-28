@@ -9,7 +9,7 @@ resources:
 - repo: self
 
 variables:
-  tag: '$(Build.BuildId)'
+  tag: 'recklessop/$(Build.BuildId)'
 
 stages:
 - stage: Build
@@ -32,4 +32,5 @@ stages:
         containerRegistry: 'recklessop-docker-hub'
         repository: 'zerto-exporter'
         command: 'push'
-        tags: '$(Build.BuildId)'
+        tags: |
+          $(tag)
