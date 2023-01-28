@@ -8,9 +8,10 @@ services:
       - "9999:9999"
     environment:
       - VERIFY_SSL=False
-      - ZVM_HOST=192.168.52.30
+      - ZVM_HOST=192.168.50.60
       - ZVM_PORT=443
-      - CLIENT_ID=zerto-exporter
-      - CLIENT_SECRET=37478287-e9c3-4732-b100-5f0a374636fa
+      - CLIENT_ID=api-script
+      - CLIENT_SECRET=js51tDM8oappYUGRJBhF7bcsedNoHA5j
+      - LOGGING_LEVEL=INFO #Valid settings are CRITICAL, ERROR, WARNING, INFO, DEBUG
     volumes:
       - "./app:/usr/src/app:rw"
