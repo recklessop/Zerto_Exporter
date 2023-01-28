@@ -28,9 +28,8 @@ stages:
         tags: |
           $(tag)
     - task: Docker@2
-      displayName: Build and Push a Docker Hub Image
       inputs:
         containerRegistry: 'recklessop-docker-hub'
         repository: 'zerto-exporter'
-        command: 'buildAndPush'
-        Dockerfile: '**/Dockerfile'
+        command: 'push'
+        tags: '$(Build.BuildId)'
