@@ -9,7 +9,7 @@ resources:
 - repo: self
 
 variables:
-  tag: '$(Build.BuildId)'
+  tag: 'recklessop/$(Build.BuildId)'
 
 stages:
 - stage: Build
