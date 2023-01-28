@@ -27,7 +27,7 @@ stages:
     - task: Docker@2
       inputs:
         containerRegistry: 'recklessop-docker-hub'
-        repository: 'zerto-exporter'
+        repository: 'recklessop/zerto-exporter'
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: |
