@@ -23,7 +23,17 @@ stages:
     - task: Docker@2
       inputs:
         containerRegistry: 'recklessop-docker-hub'
+        command: 'login'
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'recklessop-docker-hub'
         repository: 'zerto-exporter'
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
-        tags: 'recklessop/zerto-exporter:$(Build.BuildId)'
+        tags: |
+          $(Build.BuildId)
+          latest
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'recklessop-docker-hub'
+        command: 'logout'
