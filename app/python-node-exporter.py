@@ -52,6 +52,121 @@ def ZvmAuthHandler():
         log.debug("Token Expires in " + str(expiresIn) + " seconds")
         time.sleep(10)
 
+def GetStatsFunc():
+    tempdb = TinyDB(storage=MemoryStorage)
+    dbvm = Query()
+    while (True) :
+        global token
+
+        if (token != ""):
+            log.info("Got Auth Token!")
+            log.debug("token: " + str(token))
+            log.debug("Data Collector Loop Running")
+            
+            metricsDictionary = {}
+
+            h2 = CaseInsensitiveDict()
+            h2["Accept"] = "application/json"
+            h2["Authorization"] = "Bearer " + token
+            
+            ## Statistics API
+            uri = "https://" + zvm_url + ":" + zvm_port + "/v1/statistics/vms/"
+            statsapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+            statsapi_json  = statsapi.json()
+            #log.debug(statsapi_json)
+            for vm in statsapi_json:
+                #log.debug(vm)
+                oldvmdata = dict()
+
+                CurrentIops                       = 0
+                CurrentWriteCounterInMBs          = 0
+                CurrentSyncCounterInMBs           = 0
+                CurrentNetworkTrafficCounterInMBs = 0
+                CurrentEncryptedLBs               = 0
+                CurrentUnencryptedLBs             = 0
+                CurrentTotalLBs                   = 0
+                CurrentPercentEncrypted           = 0
+                VMName                            = "NA"
+
+                oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'])
+                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
+                #log.debug("All Database")
+                #log.debug(tempdb.all())
+                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
+                log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
+                if (oldvmdata):
+                    #log.debug("Record Found")
+                    #log.debug("_*_*_*_*_*_*_*_*")
+                    #log.debug(oldvmdata[0])
+                    #log.debug("_*_*_*_*_*_*_*_*")
+                    log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
+
+                    #log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
+                    VMName                            = oldvmdata[0]['VmName']
+                    #log.debug("Current VM " + str(VMName))
+                    CurrentIops                       = vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter']
+                    #log.debug("CurrentIops " + str(CurrentIops))
+                    CurrentSyncCounterInMBs           = vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs']
+                    #log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
+                    CurrentNetworkTrafficCounterInMBs = vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs']
+                    #log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
+                    CurrentEncryptedLBs               = vm['EncryptionStatistics']['EncryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['EncryptedDataInLBs']
+                    #log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
+                    CurrentUnencryptedLBs             = vm['EncryptionStatistics']['UnencryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['UnencryptedDataInLBs']
+                    #log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
+                    CurrentTotalLBs                   = CurrentEncryptedLBs + CurrentUnencryptedLBs
+                    #log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
+                    if CurrentTotalLBs != 0:
+                        CurrentPercentEncrypted       = ((CurrentEncryptedLBs / CurrentTotalLBs) * 100)
+                    else:
+                        CurrentPercentEncrypted       = 0
+                    #log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
+
+                else:
+                    log.debug("No Record")
+                    #insert original VM record to tempdb
+                    log.debug(tempdb.insert(vm))
+
+                    # update database with VM name, for easier display in Grafana Legends
+                    uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/" + vm['VmIdentifier']
+                    vapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+                    vapi_json  = vapi.json()
+                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
+                    #log.debug(vapi_json)
+                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
+                    tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
+                    VMName = vapi_json['VmName']
+
+                # Store Calculated Metrics
+                metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentIops
+                metricsDictionary["vm_WriteCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentWriteCounterInMBs
+                metricsDictionary["vm_SyncCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentSyncCounterInMBs
+                metricsDictionary["vm_NetworkTrafficCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentNetworkTrafficCounterInMBs
+                metricsDictionary["vm_EncryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentEncryptedLBs
+                metricsDictionary["vm_UnencryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentUnencryptedLBs
+                metricsDictionary["vm_TotalDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentTotalLBs
+                metricsDictionary["vm_PercentEncrypted{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentPercentEncrypted
+
+            ## Write metrics to a human readable metrics.txt file as well as a metrics file that is easy to get in prometheus
+            file_object = open('statsmetrics', 'w')
+            txt_object = open('statsmetrics.txt', 'w')
+            for item in metricsDictionary :
+                file_object.write(item)
+                file_object.write(" ")
+                file_object.write(str(metricsDictionary[item]))
+                file_object.write("\n")
+                txt_object.write(item)
+                txt_object.write(" ")
+                txt_object.write(str(metricsDictionary[item]))
+                txt_object.write("\n")
+
+            # This function will get data every 10 seconds
+            log.debug("Starting Sleep")
+            time.sleep(10)
+        else:
+            log.debug("Waiting 1 second for Auth Token")
+            time.sleep(1)
+
 
 def GetDataFunc():
     tempdb = TinyDB(storage=MemoryStorage)
@@ -173,84 +288,6 @@ def GetDataFunc():
                     percentage_used = (volume["Size"]["UsedInBytes"] / volume["Size"]["ProvisionedInBytes"] * 100)
                     percentage_used = round(percentage_used, 1)
                     #metricsDictionary["scratch_volume_percentage_used{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = percentage_used
-            
-            ## Statistics API
-            uri = "https://" + zvm_url + ":" + zvm_port + "/v1/statistics/vms/"
-            statsapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
-            statsapi_json  = statsapi.json()
-            #log.debug(statsapi_json)
-            for vm in statsapi_json:
-                #log.debug(vm)
-                oldvmdata = dict()
-
-                CurrentIops                       = 0
-                CurrentWriteCounterInMBs          = 0
-                CurrentSyncCounterInMBs           = 0
-                CurrentNetworkTrafficCounterInMBs = 0
-                CurrentEncryptedLBs               = 0
-                CurrentUnencryptedLBs             = 0
-                CurrentTotalLBs                   = 0
-                CurrentPercentEncrypted           = 0
-                VMName                            = "NA"
-
-                oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'])
-                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                #log.debug("All Database")
-                #log.debug(tempdb.all())
-                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
-                if (oldvmdata):
-                    #log.debug("Record Found")
-                    #log.debug("_*_*_*_*_*_*_*_*")
-                    #log.debug(oldvmdata[0])
-                    #log.debug("_*_*_*_*_*_*_*_*")
-                    log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
-
-                    #log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
-                    VMName                            = oldvmdata[0]['VmName']
-                    #log.debug("Current VM " + str(VMName))
-                    CurrentIops                       = vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter']
-                    #log.debug("CurrentIops " + str(CurrentIops))
-                    CurrentSyncCounterInMBs           = vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs']
-                    #log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
-                    CurrentNetworkTrafficCounterInMBs = vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs']
-                    #log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
-                    CurrentEncryptedLBs               = vm['EncryptionStatistics']['EncryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['EncryptedDataInLBs']
-                    #log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
-                    CurrentUnencryptedLBs             = vm['EncryptionStatistics']['UnencryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['UnencryptedDataInLBs']
-                    #log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
-                    CurrentTotalLBs                   = CurrentEncryptedLBs + CurrentUnencryptedLBs
-                    #log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
-                    if CurrentTotalLBs != 0:
-                        CurrentPercentEncrypted       = ((CurrentEncryptedLBs / CurrentTotalLBs) * 100)
-                    else:
-                        CurrentPercentEncrypted       = 0
-                    #log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
-
-                else:
-                    log.debug("No Record")
-                    #insert original VM record to tempdb
-                    log.debug(tempdb.insert(vm))
-
-                    # update database with VM name, for easier display in Grafana Legends
-                    uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/" + vm['VmIdentifier']
-                    vapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
-                    vapi_json  = vapi.json()
-                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
-                    #log.debug(vapi_json)
-                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
-                    tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
-                    VMName = vapi_json['VmName']
-
-                # Store Calculated Metrics
-                metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentIops
-                metricsDictionary["vm_WriteCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentWriteCounterInMBs
-                metricsDictionary["vm_SyncCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentSyncCounterInMBs
-                metricsDictionary["vm_NetworkTrafficCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentNetworkTrafficCounterInMBs
-                metricsDictionary["vm_EncryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentEncryptedLBs
-                metricsDictionary["vm_UnencryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentUnencryptedLBs
-                metricsDictionary["vm_TotalDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentTotalLBs
-                metricsDictionary["vm_PercentEncrypted{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentPercentEncrypted
 
             ### VRA API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vras/"
@@ -283,7 +320,7 @@ def GetDataFunc():
 
             # This function will get data every 10 seconds
             log.debug("Starting Sleep")
-            time.sleep(10)
+            time.sleep(60)
         else:
             log.debug("Waiting 1 second for Auth Token")
             time.sleep(1)
@@ -300,6 +337,10 @@ background_thread.start()
 background_thread = Thread(target = GetDataFunc)
 background_thread.start()
 
+#-----------------Start Data collector Thread-----------------
+# run GetDataFunc func in the background
+background_thread = Thread(target = GetStatsFunc)
+background_thread.start()
 
 #----------------run http server on port 9999-----------------
 def WebServer():
