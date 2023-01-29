@@ -144,18 +144,17 @@ def GetDataFunc():
             vmapi_json  = vmapi.json()
             #log.debug(vmapi_json)
             for vm in vmapi_json :
-                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ActualRPO"]
-                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ThroughputInMB"]
-                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["IOPs"]
-                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
-                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
-                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalUsedStorageMb"]
-                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["OutgoingBandWidthInMbps"]
-                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["UsedStorageInMB"]
-                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ProvisionedStorageInMB"]
-                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["Status"]
-                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["SubStatus"]
-                metricsDictionary["vm_recoveryhostname{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["RecoveryHostName"]
+                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ActualRPO"]
+                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ThroughputInMB"]
+                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["IOPs"]
+                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
+                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
+                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalUsedStorageMb"]
+                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["OutgoingBandWidthInMbps"]
+                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["UsedStorageInMB"]
+                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ProvisionedStorageInMB"]
+                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["Status"]
+                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["SubStatus"]
 
             ## Volumes API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
@@ -257,7 +256,7 @@ def GetDataFunc():
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vras/"
             service = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
             vra_json  = service.json()
-            #log.debug(vpg_json)
+            log.debug(vra_json)
             for vra in vra_json :
                 metricsDictionary["vra_memory_in_GB{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion'] + "\"}"] = vra["MemoryInGB"]
                 metricsDictionary["vra_vcpu_count{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion'] + "\"}"] = vra["NumOfCpus"]
@@ -289,18 +288,20 @@ def GetDataFunc():
             log.debug("Waiting 1 second for Auth Token")
             time.sleep(1)
 
+
 #-------Start function to maintain ZVM Authentication---------
 # run ZvmAuthHandler func in the background
 background_thread = Thread(target = ZvmAuthHandler)
 background_thread.start()
+
 
 #-----------------Start Data collector Thread-----------------
 # run GetDataFunc func in the background
 background_thread = Thread(target = GetDataFunc)
 background_thread.start()
 
-#----------------run http server on port 9999-----------------
 
+#----------------run http server on port 9999-----------------
 def WebServer():
     PORT = 9999
 
