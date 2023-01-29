@@ -93,16 +93,31 @@ def GetDataFunc():
             ds_json  = service.json()
             #log.debug(ds_json)
             for ds in ds_json :
-                #log.debug("!!!!!!!!!!!!!!!! Datastore Info!!!!!!!!!!!!!!!!!")
-                #log.debug(ds['DatastoreName'])
-                #log.debug(ds["Stats"]["NumVRAs"])
-                #log.debug(ds["Stats"]["NumVRAs"])
-                #log.debug(ds["Stats"]["NumVRAs"])
+                log.debug("!!!!!!!!!!!!!!!! Datastore Info!!!!!!!!!!!!!!!!!")
+                log.debug(ds['DatastoreName'])
+                log.debug(ds["Stats"]["Status"])
+                log.debug(ds["Stats"]["NumVRAs"])
+                log.debug(ds["Stats"]["NumIncomingVMs"])
+                log.debug(ds["Stats"]["NumOutgoingVMs"])
+                log.debug(ds["Stats"]["Usage"]["Datastore"]["CapacityInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Datastore"]["FreeInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Datastore"]["UsedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Datastore"]["ProvisionedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Protected"]["UsedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Protected"]["ProvisionedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Recovery"]["UsedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Recovery"]["ProvisionedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Journal"]["UsedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Journal"]["ProvisionedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Scratch"]["UsedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Scratch"]["ProvisionedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Appliances"]["UsedInBytes"])
+                log.debug(ds["Stats"]["Usage"]["Zerto"]["Appliances"]["ProvisionedInBytes"])
 
                 metricsDictionary["datastore_health_status{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Health"]["Status"]
-                #metricsDictionary["datastore_vras{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumVRAs"]
-                #metricsDictionary["datastore_incoming_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumIncomingVMs"]
-                #metricsDictionary["datastore_outgoing_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumOutgoingVMs"]
+                metricsDictionary["datastore_vras{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumVRAs"]
+                metricsDictionary["datastore_incoming_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumIncomingVMs"]
+                metricsDictionary["datastore_outgoing_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumOutgoingVMs"]
                 #metricsDictionary["datastore_usage_capacityinbytes{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["Usage"]["Datastore"]["CapacityInBytes"]
                 #metricsDictionary["datastore_usage_freeinbytes{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["Usage"]["Datastore"]["FreeInBytes"]
                 #metricsDictionary["datastore_usage_usedinbytes{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["Usage"]["Datastore"]["UsedInBytes"]
