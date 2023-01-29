@@ -95,7 +95,7 @@ def GetDataFunc():
             for ds in ds_json :
                 log.debug("!!!!!!!!!!!!!!!! Datastore Info!!!!!!!!!!!!!!!!!")
                 log.debug(ds['DatastoreName'])
-                log.debug(ds["Health"]["Status"])
+                #log.debug(ds["Health"]["Status"])
                 log.debug(ds["Stats"]["NumVRAs"])
                 log.debug(ds["Stats"]["NumIncomingVMs"])
                 log.debug(ds["Stats"]["NumOutgoingVMs"])
@@ -114,7 +114,7 @@ def GetDataFunc():
                 log.debug(ds["Stats"]["Usage"]["Zerto"]["Appliances"]["UsedInBytes"])
                 log.debug(ds["Stats"]["Usage"]["Zerto"]["Appliances"]["ProvisionedInBytes"])
 
-                metricsDictionary["datastore_health_status{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Health"]["Status"]
+                #metricsDictionary["datastore_health_status{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Health"]["Status"]
                 metricsDictionary["datastore_vras{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumVRAs"]
                 metricsDictionary["datastore_incoming_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumIncomingVMs"]
                 metricsDictionary["datastore_outgoing_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumOutgoingVMs"]
