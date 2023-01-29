@@ -75,7 +75,7 @@ def GetDataFunc():
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vpgs/"
             service = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
             vpg_json  = service.json()
-            log.debug(vpg_json)
+            #log.debug(vpg_json)
             for vpg in vpg_json :
                 metricsDictionary["vpg_storage_used_in_mb{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["UsedStorageInMB"]
                 metricsDictionary["vpg_actual_rpo{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\"}"] = vpg["ActualRPO"]
@@ -93,6 +93,12 @@ def GetDataFunc():
             ds_json  = service.json()
             log.debug(ds_json)
             for ds in ds_json :
+                log.debug("!!!!!!!!!!!!!!!! Datastore Info!!!!!!!!!!!!!!!!!")
+                log.debug(ds['DatastoreName'])
+                log.debug(ds["Stats"]["NumVRAs"])
+                log.debug(ds["Stats"]["NumVRAs"])
+                log.debug(ds["Stats"]["NumVRAs"])
+
                 metricsDictionary["datastore_health_status{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Health"]["Status"]
                 metricsDictionary["datastore_vras{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumVRAs"]
                 metricsDictionary["datastore_incoming_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Stats"]["NumIncomingVMs"]
@@ -116,7 +122,7 @@ def GetDataFunc():
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
             vmapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
             vmapi_json  = vmapi.json()
-            log.debug(vmapi_json)
+            #log.debug(vmapi_json)
             for vm in vmapi_json :
                 metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
                 metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
@@ -148,9 +154,9 @@ def GetDataFunc():
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/statistics/vms/"
             statsapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
             statsapi_json  = statsapi.json()
-            log.debug(statsapi_json)
+            #log.debug(statsapi_json)
             for vm in statsapi_json:
-                log.debug(vm)
+                #log.debug(vm)
                 oldvmdata = dict()
 
                 CurrentIops                       = 0
@@ -164,38 +170,38 @@ def GetDataFunc():
                 VMName                            = "NA"
 
                 oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'])
-                log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                log.debug("All Database")
-                log.debug(tempdb.all())
-                log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
+                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
+                #log.debug("All Database")
+                #log.debug(tempdb.all())
+                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
+                #log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
                 if (oldvmdata):
-                    log.debug("Record Found")
-                    log.debug("_*_*_*_*_*_*_*_*")
-                    log.debug(oldvmdata[0])
-                    log.debug("_*_*_*_*_*_*_*_*")
-                    log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
+                    #log.debug("Record Found")
+                    #log.debug("_*_*_*_*_*_*_*_*")
+                    #log.debug(oldvmdata[0])
+                    #log.debug("_*_*_*_*_*_*_*_*")
+                    #log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
 
-                    log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
+                    #log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                     VMName                            = oldvmdata[0]['VmName']
-                    log.debug("Current VM " + str(VMName))
+                    #log.debug("Current VM " + str(VMName))
                     CurrentIops                       = vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter']
-                    log.debug("CurrentIops " + str(CurrentIops))
+                    #log.debug("CurrentIops " + str(CurrentIops))
                     CurrentSyncCounterInMBs           = vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs']
-                    log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
+                    #log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
                     CurrentNetworkTrafficCounterInMBs = vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs']
-                    log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
+                    #log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
                     CurrentEncryptedLBs               = vm['EncryptionStatistics']['EncryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['EncryptedDataInLBs']
-                    log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
+                    #log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
                     CurrentUnencryptedLBs             = vm['EncryptionStatistics']['UnencryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['UnencryptedDataInLBs']
-                    log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
+                    #log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
                     CurrentTotalLBs                   = CurrentEncryptedLBs + CurrentUnencryptedLBs
-                    log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
+                    #log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
                     if CurrentTotalLBs != 0:
                         CurrentPercentEncrypted       = ((CurrentEncryptedLBs / CurrentTotalLBs) * 100)
                     else:
                         CurrentPercentEncrypted       = 0
-                    log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
+                    #log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
 
                 else:
                     log.debug("No Record")
@@ -206,9 +212,9 @@ def GetDataFunc():
                     uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/" + vm['VmIdentifier']
                     vapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
                     vapi_json  = vapi.json()
-                    log.debug("!@!@!@!@!@!@!@!@!@!@!@")
-                    log.debug(vapi_json)
-                    log.debug("!@!@!@!@!@!@!@!@!@!@!@")
+                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
+                    #log.debug(vapi_json)
+                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
                     tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
                     VMName = vapi_json['VmName']
 
