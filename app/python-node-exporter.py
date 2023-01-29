@@ -139,13 +139,18 @@ def GetDataFunc():
             vmapi_json  = vmapi.json()
             #log.debug(vmapi_json)
             for vm in vmapi_json :
-                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ActualRPO"]
-                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["ThroughputInMB"]
-                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["IOPs"]
-                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
-                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["JournalUsedStorageMb"]
-                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
-                #metricsDictionary["vm_actual_rpo{VmName=\"" + vpg['VmName'] + "\"}"] = vm["actualRPO"]
+                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["ActualRPO"]
+                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["ThroughputInMB"]
+                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["IOPs"]
+                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
+                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
+                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["JournalUsedStorageMb"]
+                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
+                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["UsedStorageInMB"]
+                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["ProvisionedStorageInMB"]
+                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["Status"]
+                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["SubStatus"]
+                metricsDictionary["vm_recoveryhostname{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["RecoveryHostName"]
 
             ## Volumes API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
@@ -195,7 +200,7 @@ def GetDataFunc():
                     #log.debug("_*_*_*_*_*_*_*_*")
                     #log.debug(oldvmdata[0])
                     #log.debug("_*_*_*_*_*_*_*_*")
-                    #log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
+                    log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
 
                     #log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                     VMName                            = oldvmdata[0]['VmName']
