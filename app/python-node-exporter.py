@@ -139,18 +139,18 @@ def GetDataFunc():
             vmapi_json  = vmapi.json()
             #log.debug(vmapi_json)
             for vm in vmapi_json :
-                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["ActualRPO"]
-                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["ThroughputInMB"]
-                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["IOPs"]
-                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
-                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
-                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["JournalUsedStorageMb"]
-                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["OutgoingBandWidthInMbps"]
-                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["UsedStorageInMB"]
-                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["ProvisionedStorageInMB"]
-                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["Status"]
-                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["SubStatus"]
-                metricsDictionary["vm_recoveryhostname{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + vm['Priority'] + "\"}"] = vm["RecoveryHostName"]
+                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ActualRPO"]
+                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ThroughputInMB"]
+                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["IOPs"]
+                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
+                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
+                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["JournalUsedStorageMb"]
+                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["OutgoingBandWidthInMbps"]
+                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["UsedStorageInMB"]
+                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["ProvisionedStorageInMB"]
+                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["Status"]
+                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["SubStatus"]
+                metricsDictionary["vm_recoveryhostname{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["RecoveryHostName"]
 
             ## Volumes API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
@@ -194,7 +194,7 @@ def GetDataFunc():
                 #log.debug("All Database")
                 #log.debug(tempdb.all())
                 #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                #log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
+                log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
                 if (oldvmdata):
                     #log.debug("Record Found")
                     #log.debug("_*_*_*_*_*_*_*_*")
