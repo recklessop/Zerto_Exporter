@@ -159,6 +159,8 @@ def GetStatsFunc():
                 txt_object.write(" ")
                 txt_object.write(str(metricsDictionary[item]))
                 txt_object.write("\n")
+            file_object.close()
+            txt_object.close()
 
             # This function will get data every 10 seconds
             log.debug("Starting Sleep")
@@ -317,6 +319,9 @@ def GetDataFunc():
                 txt_object.write(" ")
                 txt_object.write(str(metricsDictionary[item]))
                 txt_object.write("\n")
+            
+            file_object.close()
+            txt_object.close()
 
             # This function will get data every 10 seconds
             log.debug("Starting Sleep")
