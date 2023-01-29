@@ -95,7 +95,7 @@ def GetDataFunc():
             for ds in ds_json :
                 log.debug("!!!!!!!!!!!!!!!! Datastore Info!!!!!!!!!!!!!!!!!")
                 log.debug(ds['DatastoreName'])
-                log.debug(ds["Stats"]["Status"])
+                log.debug(ds["Health"]["Status"])
                 log.debug(ds["Stats"]["NumVRAs"])
                 log.debug(ds["Stats"]["NumIncomingVMs"])
                 log.debug(ds["Stats"]["NumOutgoingVMs"])
