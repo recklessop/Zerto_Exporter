@@ -16,6 +16,7 @@ zvm_url = os.environ.get('ZVM_HOST', '192.168.50.60')
 zvm_port = os.environ.get('ZVM_PORT', '443')
 client_id = os.environ.get('CLIENT_ID', 'api-script')
 client_secret = os.environ.get('CLIENT_SECRET', 'js51tDM8oappYUGRJBhF7bcsedNoHA5j')
+scrape_speed = os.environ.get('SCRAPE_SPEED', 30)
 LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG').upper()
 
 logging.basicConfig(filename='../logs/Log-Main.log', level=LOGLEVEL, format='%(relativeCreated)6d %(threadName)s %(message)s')
@@ -164,7 +165,7 @@ def GetStatsFunc():
 
             # This function will get data every 10 seconds
             log.debug("Starting Sleep")
-            time.sleep(10)
+            time.sleep(scrape_speed)
         else:
             log.debug("Waiting 1 second for Auth Token")
             time.sleep(1)
