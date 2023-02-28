@@ -163,8 +163,7 @@ def GetStatsFunc():
             file_object.close()
             txt_object.close()
 
-            # This function will get data every 10 seconds
-            log.debug("Starting Sleep")
+            log.debug("Starting Sleep for " + scrape_speed + " seconds")
             time.sleep(scrape_speed)
         else:
             log.debug("Waiting 1 second for Auth Token")
@@ -325,8 +324,8 @@ def GetDataFunc():
             txt_object.close()
 
             # This function will get data every 10 seconds
-            log.debug("Starting Sleep")
-            time.sleep(60)
+            log.debug("Starting Sleep for " + scrape_speed + " seconds")
+            time.sleep(scrape_speed)
         else:
             log.debug("Waiting 1 second for Auth Token")
             time.sleep(1)
