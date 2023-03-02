@@ -273,7 +273,7 @@ def GetDataFunc():
                 metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["Status"]
                 metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority']) + "\"}"] = vm["SubStatus"]
 
-            ## Volumes API
+            ## Volumes API for Scratch Volumes
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
             volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
             volapi_json  = volapi.json()
@@ -290,6 +290,28 @@ def GetDataFunc():
                     percentage_used = (volume["Size"]["UsedInBytes"] / volume["Size"]["ProvisionedInBytes"] * 100)
                     percentage_used = round(percentage_used, 1)
                     #metricsDictionary["scratch_volume_percentage_used{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = percentage_used
+
+            ## Volumes API for Journal Volumes
+            uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=journal"
+            volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
+            volapi_json  = volapi.json()
+
+            if(bool(volapi_json)):
+                for volume in volapi_json :
+                    #metricsDictionary["scratch_volume_provisioned_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["ProvisionedInBytes"]
+                    # Determine the key for a given VM, then see if the key is already in the dictionary, if it is add the next disk to the total. If not, create a new key.
+                    metrickey = "vm_journal_volume_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"
+                    if (metrickey in metricsDictionary):
+                        metricsDictionary[metrickey] = metricsDictionary[metrickey] + volume["Size"]["UsedInBytes"]
+                    else:
+                        metricsDictionary[metrickey] = volume["Size"]["UsedInBytes"]
+                    
+                    metrickey = "vm_journal_volume_count{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"
+                    if (metrickey in metricsDictionary):
+                        metricsDictionary[metrickey] = metricsDictionary[metrickey] + 1
+                    else:
+                        metricsDictionary[metrickey] = 1
+                    
 
             ### VRA API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vras/"
