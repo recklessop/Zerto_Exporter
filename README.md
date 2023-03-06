@@ -41,6 +41,6 @@ Add this part at the end of the configuration of your Prometheus (prometheus.yam
 
 ## Forked from
 
-Huge shout out to hmdhszd for the framework that started this project. You can find his non-zerto version of a Python Prometheus Exporter (here.)[
-https://github.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python]
+Huge shout out to hmdhszd for the framework that started this project. You can find his non-zerto version of a Python Prometheus Exporter [here.](
+https://github.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python)
 
