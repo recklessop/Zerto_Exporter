@@ -10,13 +10,13 @@ In this example, i used API to get Bitcoin price in Dollar and Euro, import it i
 Login to the server where you want to run this exporter and clone the project:
 
 ```bash
-  git clone https://github.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python.git
+  git clone https://github.com/recklessop/Zerto_Exporter.git
 ```
 
 Go to the project directory:
 
 ```bash
-  cd Custom_Prometheus_Node_Exporter-in-Python
+  cd Zerto_Exporter
 ```
 
 Build image and start the container:
@@ -39,7 +39,8 @@ Add this part at the end of the configuration of your Prometheus (prometheus.yam
 ```
 
 
-## Add Grafana dashboards using imported items
+## Forked from
 
-![App Screenshot](https://raw.githubusercontent.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python/master/Screenshot%20from%20python%20node%20exporter.png)
+Huge shout out to hmdhszd for the framework that started this project. You can find his non-zerto version of a Python Prometheus Exporter (here.)[
+https://github.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python]
 
