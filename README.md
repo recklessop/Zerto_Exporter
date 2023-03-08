@@ -1,8 +1,6 @@
 ## About the app
 
-In one particilar project, i had to import some key/value data to Prometheus. So i have decided to create my custom-built Node Exporter in Python, then dockerize it and share it in my Github account.
-
-In this example, i used API to get Bitcoin price in Dollar and Euro, import it in the Prometheus and visualize it using Grafana. You can import any data using your own Python scripts.
+This Python App will export Zerto API data from the new ZVM appliance in prometheus format. It has several different threads that each scrape different parts of the ZVM API. To visualize the data in Grafana you will need to scrape this app with Prometheus and then create dashboards using Grafana.
 
 
 ## Run Program
@@ -10,13 +8,13 @@ In this example, i used API to get Bitcoin price in Dollar and Euro, import it i
 Login to the server where you want to run this exporter and clone the project:
 
 ```bash
-  git clone https://github.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python.git
+  git clone https://github.com/recklessop/Zerto_Exporter.git
 ```
 
 Go to the project directory:
 
 ```bash
-  cd Custom_Prometheus_Node_Exporter-in-Python
+  cd Zerto_Exporter
 ```
 
 Build image and start the container:
@@ -39,7 +37,8 @@ Add this part at the end of the configuration of your Prometheus (prometheus.yam
 ```
 
 
-## Add Grafana dashboards using imported items
+## Forked from
 
-![App Screenshot](https://raw.githubusercontent.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python/master/Screenshot%20from%20python%20node%20exporter.png)
+Huge shout out to hmdhszd for the framework that started this project. You can find his non-zerto version of a Python Prometheus Exporter [here.](
+https://github.com/hmdhszd/Custom_Prometheus_Node_Exporter-in-Python)
 
