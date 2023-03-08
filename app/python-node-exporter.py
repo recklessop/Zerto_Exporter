@@ -386,10 +386,13 @@ while True:
     # check if any thread has crashed
     if not auth_thread.is_alive():
         # restart the thread
+        print("Starting ZvmAuthHandler Thread")
         auth_thread = start_thread(ZvmAuthHandler)
     if not data_thread.is_alive():
         # restart the thread
+        print("Starting GetDataFunc Thread")
         data_thread = start_thread(GetDataFunc)
     if not stats_thread.is_alive():
         # restart the thread
+        print("Starting GetStatsFunc Thread")
         stats_thread = start_thread(GetStatsFunc)
