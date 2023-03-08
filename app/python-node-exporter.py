@@ -5,6 +5,7 @@ import time
 import os
 import logging
 import threading
+from logging.handlers import RotatingFileHandler
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
 from tinydb import TinyDB, Query
