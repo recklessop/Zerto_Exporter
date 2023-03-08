@@ -4,7 +4,7 @@ import socketserver
 import time
 import os
 import logging
-from threading import Thread
+import thread
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
 from tinydb import TinyDB, Query
