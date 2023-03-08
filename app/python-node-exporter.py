@@ -366,6 +366,41 @@ def GetDataFunc():
             log.debug("Waiting 1 second for Auth Token")
             time.sleep(1)
 
+def ThreadProbe():
+    log.debug("Thread Probe Started")
+    metricsDictionary = {}
+
+    if probe_thread.is_alive():
+        metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 1
+    else:
+        metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 0
+
+    if data_thread.is_alive():
+        metricsDictionary["exporter_thread_status{thread=\"" + "DataStats" + "\"}"] = 1
+    else:
+        metricsDictionary["exporter_thread_status{thread=\"" + "DataStats" + "\"}"] = 0
+
+    if stats_thread.is_alive():
+        metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats" + "\"}"] = 1
+    else:
+        metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats" + "\"}"] = 0
+
+    file_object = open('threads', 'w')
+    txt_object = open('threads.txt', 'w')
+    for item in metricsDictionary :
+        file_object.write(item)
+        file_object.write(" ")
+        file_object.write(str(metricsDictionary[item]))
+        file_object.write("\n")
+        txt_object.write(item)
+        txt_object.write(" ")
+        txt_object.write(str(metricsDictionary[item]))
+        txt_object.write("\n")
+    
+    file_object.close()
+    txt_object.close()
+    sleep(30)
+
 #----------------run http server on port 9999-----------------
 def WebServer():
     log.debug("Web Server Started")
@@ -385,14 +420,19 @@ def start_thread(target_func):
     return thread
 
 # start the threads
-auth_thread = start_thread(ZvmAuthHandler)
-data_thread = start_thread(GetDataFunc)
-stats_thread = start_thread(GetStatsFunc)
-webserver_thread = start_thread(WebServer)
+print("Probe thread: " str(probe_thread = start_thread(ThreadProbe)))
+print("Auth thread: " str(auth_thread = start_thread(ZvmAuthHandler)))
+print("Data thread: " str(data_thread = start_thread(GetDataFunc)))
+print("Stats thread: " str(stats_thread = start_thread(GetStatsFunc)))
+print("Webserver thread: " str(webserver_thread = start_thread(WebServer)))
 
 # loop indefinitely
 while True:
     # check if any thread has crashed
+    if not probe_thread.is_alive():
+        # restart the thread
+        print("Starting Probe Thread")
+        probe_thread = start_thread(ThreadProbe)
     if not auth_thread.is_alive():
         # restart the thread
         print("Starting ZvmAuthHandler Thread")
@@ -409,3 +449,4 @@ while True:
         # restart the thread
         print("Starting WebServer Thread")
         webserver_thread = start_thread(WebServer)
+    sleep(api_timeout)
