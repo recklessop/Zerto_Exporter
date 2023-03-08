@@ -368,6 +368,7 @@ def GetDataFunc():
 
 #----------------run http server on port 9999-----------------
 def WebServer():
+    log.debug("Web Server Started")
     PORT = 9999
 
     Handler = http.server.SimpleHTTPRequestHandler
