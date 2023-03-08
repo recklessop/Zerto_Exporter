@@ -17,6 +17,7 @@ zvm_port = os.environ.get('ZVM_PORT', '443')
 client_id = os.environ.get('CLIENT_ID', 'api-script')
 client_secret = os.environ.get('CLIENT_SECRET', 'js51tDM8oappYUGRJBhF7bcsedNoHA5j')
 scrape_speed = int(os.environ.get('SCRAPE_SPEED', 30))
+api_timeout = int(os.environ.get('API_TIMEOUT', 5))
 LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG').upper()
 
 logging.basicConfig(filename='../logs/Log-Main.log', level=LOGLEVEL, format='%(relativeCreated)6d %(threadName)s %(message)s')
@@ -190,7 +191,7 @@ def GetDataFunc():
 
             ### VPGs API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vpgs/"
-            service = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+            service = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             vpg_json  = service.json()
             #log.debug(vpg_json)
             for vpg in vpg_json :
@@ -211,7 +212,7 @@ def GetDataFunc():
 
             ### Datastores APIs
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/datastores/"
-            service = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+            service = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             ds_json  = service.json()
             #log.debug(ds_json)
             for ds in ds_json :
@@ -257,7 +258,7 @@ def GetDataFunc():
 
             ## VMs API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
-            vmapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+            vmapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             vmapi_json  = vmapi.json()
             #log.debug(vmapi_json)
             for vm in vmapi_json :
@@ -275,7 +276,7 @@ def GetDataFunc():
 
             ## Volumes API for Scratch Volumes
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
-            volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
+            volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             volapi_json  = volapi.json()
 
             if(bool(volapi_json)):
@@ -293,7 +294,7 @@ def GetDataFunc():
 
             ## Volumes API for Journal Volumes
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=journal"
-            volapi = requests.get(url=uri, timeout=5, headers=h2, verify=verifySSL)
+            volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             volapi_json  = volapi.json()
 
             if(bool(volapi_json)):
@@ -305,6 +306,12 @@ def GetDataFunc():
                         metricsDictionary[metrickey] = metricsDictionary[metrickey] + volume["Size"]["UsedInBytes"]
                     else:
                         metricsDictionary[metrickey] = volume["Size"]["UsedInBytes"]
+
+                    metrickey = "vm_journal_volume_provisioned_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"
+                    if (metrickey in metricsDictionary):
+                        metricsDictionary[metrickey] = metricsDictionary[metrickey] + volume["Size"]["ProvisionedInBytes"]
+                    else:
+                        metricsDictionary[metrickey] = volume["Size"]["ProvisionedInBytes"]
                     
                     metrickey = "vm_journal_volume_count{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"
                     if (metrickey in metricsDictionary):
@@ -315,7 +322,7 @@ def GetDataFunc():
 
             ### VRA API
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vras/"
-            service = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+            service = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             vra_json  = service.json()
             log.debug(vra_json)
             for vra in vra_json :
