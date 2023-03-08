@@ -20,8 +20,14 @@ scrape_speed = int(os.environ.get('SCRAPE_SPEED', 30))
 api_timeout = int(os.environ.get('API_TIMEOUT', 5))
 LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG').upper()
 
-logging.basicConfig(filename='../logs/Log-Main.log', level=LOGLEVEL, format='%(relativeCreated)6d %(threadName)s %(message)s')
+log_formatter = logging.Formatter('%(relativeCreated)6d %(threadName)s %(message)s')
+
+log_handler = RotatingFileHandler(filename='../logs/Log-Main.log', maxBytes=1024*1024*100, backupCount=5)
+log_handler.setFormatter(log_formatter)
+
 log = logging.getLogger("Node-Exporter")
+log.setLevel(LOGLEVEL)
+log.addHandler(log_handler)
 
 log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
 
@@ -97,32 +103,32 @@ def GetStatsFunc():
                 #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
                 log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
                 if (oldvmdata):
-                    #log.debug("Record Found")
-                    #log.debug("_*_*_*_*_*_*_*_*")
-                    #log.debug(oldvmdata[0])
-                    #log.debug("_*_*_*_*_*_*_*_*")
+                    log.debug("Record Found")
+                    log.debug("_*_*_*_*_*_*_*_*")
+                    log.debug(oldvmdata[0])
+                    log.debug("_*_*_*_*_*_*_*_*")
                     log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
 
-                    #log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
+                    log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                     VMName                            = oldvmdata[0]['VmName']
-                    #log.debug("Current VM " + str(VMName))
+                    log.debug("Current VM " + str(VMName))
                     CurrentIops                       = vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter']
-                    #log.debug("CurrentIops " + str(CurrentIops))
+                    log.debug("CurrentIops " + str(CurrentIops))
                     CurrentSyncCounterInMBs           = vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs']
-                    #log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
+                    log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
                     CurrentNetworkTrafficCounterInMBs = vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs']
-                    #log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
+                    log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
                     CurrentEncryptedLBs               = vm['EncryptionStatistics']['EncryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['EncryptedDataInLBs']
-                    #log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
+                    log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
                     CurrentUnencryptedLBs             = vm['EncryptionStatistics']['UnencryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['UnencryptedDataInLBs']
-                    #log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
+                    log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
                     CurrentTotalLBs                   = CurrentEncryptedLBs + CurrentUnencryptedLBs
-                    #log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
+                    log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
                     if CurrentTotalLBs != 0:
                         CurrentPercentEncrypted       = ((CurrentEncryptedLBs / CurrentTotalLBs) * 100)
                     else:
                         CurrentPercentEncrypted       = 0
-                    #log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
+                    log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
 
                 else:
                     log.debug("No Record")
