@@ -388,6 +388,7 @@ def start_thread(target_func):
 auth_thread = start_thread(ZvmAuthHandler)
 data_thread = start_thread(GetDataFunc)
 stats_thread = start_thread(GetStatsFunc)
+webserver_thread = start_thread(WebServer)
 
 # loop indefinitely
 while True:
@@ -404,3 +405,7 @@ while True:
         # restart the thread
         print("Starting GetStatsFunc Thread")
         stats_thread = start_thread(GetStatsFunc)
+    if not webserver_thread.is_alive():
+        # restart the thread
+        print("Starting WebServer Thread")
+        webserver_thread = start_thread(WebServer)
