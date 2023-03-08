@@ -359,23 +359,6 @@ def GetDataFunc():
             log.debug("Waiting 1 second for Auth Token")
             time.sleep(1)
 
-
-#-------Start function to maintain ZVM Authentication---------
-# run ZvmAuthHandler func in the background
-background_thread = Thread(target = ZvmAuthHandler)
-background_thread.start()
-
-
-#-----------------Start Data collector Thread-----------------
-# run GetDataFunc func in the background
-background_thread = Thread(target = GetDataFunc)
-background_thread.start()
-
-#-----------------Start Data collector Thread-----------------
-# run GetDataFunc func in the background
-background_thread = Thread(target = GetStatsFunc)
-background_thread.start()
-
 #----------------run http server on port 9999-----------------
 def WebServer():
     PORT = 9999
@@ -386,6 +369,27 @@ def WebServer():
         print("serving at port", PORT)
         httpd.serve_forever()
 
-# run WebServer func in the background
-background_thread = Thread(target = WebServer)
-background_thread.start()
+def start_thread(target_func):
+    # start a new thread
+    thread = threading.Thread(target=target_func)
+    thread.start()
+    # return the thread object
+    return thread
+
+# start the threads
+auth_thread = start_thread(ZvmAuthHandler)
+data_thread = start_thread(GetDataFunc)
+stats_thread = start_thread(GetStatsFunc)
+
+# loop indefinitely
+while True:
+    # check if any thread has crashed
+    if not auth_thread.is_alive():
+        # restart the thread
+        auth_thread = start_thread(ZvmAuthHandler)
+    if not data_thread.is_alive():
+        # restart the thread
+        data_thread = start_thread(GetDataFunc)
+    if not stats_thread.is_alive():
+        # restart the thread
+        stats_thread = start_thread(GetStatsFunc)
