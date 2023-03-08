@@ -420,11 +420,11 @@ def start_thread(target_func):
     return thread
 
 # start the threads
-print("Probe thread: " str(probe_thread = start_thread(ThreadProbe)))
-print("Auth thread: " str(auth_thread = start_thread(ZvmAuthHandler)))
-print("Data thread: " str(data_thread = start_thread(GetDataFunc)))
-print("Stats thread: " str(stats_thread = start_thread(GetStatsFunc)))
-print("Webserver thread: " str(webserver_thread = start_thread(WebServer)))
+print("Probe thread: " + str(probe_thread = start_thread(ThreadProbe)))
+print("Auth thread: " + str(auth_thread = start_thread(ZvmAuthHandler)))
+print("Data thread: " + str(data_thread = start_thread(GetDataFunc)))
+print("Stats thread: " + str(stats_thread = start_thread(GetStatsFunc)))
+print("Webserver thread: " + str(webserver_thread = start_thread(WebServer)))
 
 # loop indefinitely
 while True:
