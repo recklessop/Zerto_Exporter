@@ -370,7 +370,7 @@ def ThreadProbe():
     log.debug("Thread Probe Started")
     metricsDictionary = {}
 
-    if probe_thread.is_alive():
+    if auth_thread.is_alive():
         metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 1
     else:
         metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 0
