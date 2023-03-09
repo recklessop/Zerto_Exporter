@@ -113,17 +113,17 @@ def GetStatsFunc():
                     log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                     VMName                            = oldvmdata[0]['VmName']
                     log.debug("Current VM " + str(VMName))
-                    CurrentIops                       = vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter']
+                    CurrentIops                       = abs(vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter'])
                     log.debug("CurrentIops " + str(CurrentIops))
-                    CurrentSyncCounterInMBs           = vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs']
+                    CurrentSyncCounterInMBs           = abs(vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs'])
                     log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
-                    CurrentNetworkTrafficCounterInMBs = vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs']
+                    CurrentNetworkTrafficCounterInMBs = abs(vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs'])
                     log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
-                    CurrentEncryptedLBs               = vm['EncryptionStatistics']['EncryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['EncryptedDataInLBs']
+                    CurrentEncryptedLBs               = abs(vm['EncryptionStatistics']['EncryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['EncryptedDataInLBs'])
                     log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
-                    CurrentUnencryptedLBs             = vm['EncryptionStatistics']['UnencryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['UnencryptedDataInLBs']
+                    CurrentUnencryptedLBs             = abs(vm['EncryptionStatistics']['UnencryptedDataInLBs'] - oldvmdata[0]['EncryptionStatistics']['UnencryptedDataInLBs'])
                     log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
-                    CurrentTotalLBs                   = CurrentEncryptedLBs + CurrentUnencryptedLBs
+                    CurrentTotalLBs                   = abs(CurrentEncryptedLBs + CurrentUnencryptedLBs)
                     log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
                     if CurrentTotalLBs != 0:
                         CurrentPercentEncrypted       = ((CurrentEncryptedLBs / CurrentTotalLBs) * 100)
