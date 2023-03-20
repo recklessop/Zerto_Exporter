@@ -31,7 +31,7 @@ log_handler.setFormatter(log_formatter)
 log = logging.getLogger("Node-Exporter")
 log.setLevel(LOGLEVEL)
 log.addHandler(log_handler)
-log.info("Node-Exporter - Version " + VERSION )
+log.info("Node-Exporter - Version " + str(VERSION) )
 log.info("Log Level: " + os.environ.get('LOGLEVEL'))
 log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
 
