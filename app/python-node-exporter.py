@@ -21,7 +21,8 @@ scrape_speed = int(os.environ.get('SCRAPE_SPEED', 30))
 api_timeout = int(os.environ.get('API_TIMEOUT', 5))
 LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG').upper()
 
-log_formatter = logging.Formatter('%(relativeCreated)6d %(threadName)s %(message)s')
+#log_formatter = logging.Formatter('%(relativeCreated)6d %(threadName)s %(message)s')
+log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
 
 log_handler = RotatingFileHandler(filename='../logs/Log-Main.log', maxBytes=1024*1024*100, backupCount=5)
 log_handler.setFormatter(log_formatter)
@@ -40,8 +41,9 @@ def ZvmAuthHandler():
     log.debug("ZVMAuthHandler Thread Started")
     expiresIn = 0
     global token
+    retries = 0
     while True:
-        if (expiresIn < 30):
+        if expiresIn < 30:
             h = CaseInsensitiveDict()
             h["Content-Type"] = "application/x-www-form-urlencoded"
 
@@ -51,15 +53,42 @@ def ZvmAuthHandler():
             d["grant_type"] = "client_credentials"
 
             uri = "https://" + zvm_url + ":" + zvm_port + "/auth/realms/zerto/protocol/openid-connect/token"
-            response = requests.post(url=uri, data=d, headers=h, verify=verifySSL)
+            delay = 0
 
+            try:
+                response = requests.post(url=uri, data=d, headers=h, verify=verifySSL)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                retries += 1
+                delay = 2 ** retries
+                log.error("Error while sending authentication request: " + str(e) + ". Retrying in " + str(delay) + " seconds")
+                time.sleep(delay)
+                continue
+            else:
+                retries = 0
+            
             responseJSON = response.json()
-            log.debug(responseJSON)
-            token = str(responseJSON['access_token'])
-            expiresIn = int(responseJSON['expires_in'])
-        expiresIn = expiresIn - 10
+            if 'access_token' not in responseJSON or 'expires_in' not in responseJSON:
+                log.error("Authentication response does not contain expected keys")
+                delay = 2 ** retries
+                time.sleep(delay)
+                retries += 1
+                continue
+            
+            token = str(responseJSON.get('access_token'))
+            expiresIn = int(responseJSON.get('expires_in'))
+            
+            if response.status_code != 200:
+                log.error("Authentication request failed with status code " + str(response.status_code))
+                delay = 2 ** retries
+                time.sleep(delay)
+                retries += 1
+                continue
+                
+        expiresIn -= 10 + delay
         log.debug("Token Expires in " + str(expiresIn) + " seconds")
         time.sleep(10)
+
 
 def GetStatsFunc():
     tempdb = TinyDB(storage=MemoryStorage)
