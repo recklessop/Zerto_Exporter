@@ -19,7 +19,7 @@ client_id = os.environ.get('CLIENT_ID', 'api-script')
 client_secret = os.environ.get('CLIENT_SECRET', 'js51tDM8oappYUGRJBhF7bcsedNoHA5j')
 scrape_speed = int(os.environ.get('SCRAPE_SPEED', 30))
 api_timeout = int(os.environ.get('API_TIMEOUT', 5))
-LOGLEVEL = os.environ.get('LOGLEVEL', 'DEBUG').upper()
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 
 #log_formatter = logging.Formatter('%(relativeCreated)6d %(threadName)s %(message)s')
 log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
@@ -131,9 +131,9 @@ def GetStatsFunc():
                 #log.debug("All Database")
                 #log.debug(tempdb.all())
                 #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                log.debug("Checking TempDB for VM " + vm['VmIdentifier'])
+                log.info("Checking TempDB for VM " + vm['VmIdentifier'])
                 if (oldvmdata):
-                    log.debug("Record Found")
+                    log.info(vm['VmIdentifier'] + " Record Found")
                     log.debug("_*_*_*_*_*_*_*_*")
                     log.debug(oldvmdata[0])
                     log.debug("_*_*_*_*_*_*_*_*")
@@ -161,7 +161,7 @@ def GetStatsFunc():
                     log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
 
                 else:
-                    log.debug("No Record")
+                    log.info(vm['VmIdentifier'] + " No Record Found")
                     #insert original VM record to tempdb
                     log.debug(tempdb.insert(vm))
 
@@ -173,6 +173,7 @@ def GetStatsFunc():
                     #log.debug(vapi_json)
                     #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
                     tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
+                    log.info(vm['VmIdentifier'] + " Added to temp vm db")
                     VMName = vapi_json['VmName']
 
                 # Store Calculated Metrics
@@ -214,9 +215,9 @@ def GetDataFunc():
         global token
 
         if (token != ""):
-            log.info("Got Auth Token!")
+            log.debug("Got Auth Token!")
             log.debug("token: " + str(token))
-            log.debug("Data Collector Loop Running")
+            log.info("Data Collector Loop Running")
             
             metricsDictionary = {}
 
@@ -432,13 +433,13 @@ def ThreadProbe():
 
 #----------------run http server on port 9999-----------------
 def WebServer():
-    log.debug("Web Server Started")
+    log.info("Web Server Started")
     PORT = 9999
 
     Handler = http.server.SimpleHTTPRequestHandler
 
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        print("serving at port", PORT)
+        log.info("Webserver running on port ", PORT)
         httpd.serve_forever()
 
 def start_thread(target_func):
@@ -466,22 +467,22 @@ while True:
     # check if any thread has crashed
     if not probe_thread.is_alive():
         # restart the thread
-        print("Starting Probe Thread")
+        log.error("Probe Thread Died - Restarting")
         probe_thread = start_thread(ThreadProbe)
     if not auth_thread.is_alive():
         # restart the thread
-        print("Starting ZvmAuthHandler Thread")
+        log.error("Authentication Thread Died - Restarting")
         auth_thread = start_thread(ZvmAuthHandler)
     if not data_thread.is_alive():
         # restart the thread
-        print("Starting GetDataFunc Thread")
+        log.error("Data Thread Died - Restarting")
         data_thread = start_thread(GetDataFunc)
     if not stats_thread.is_alive():
         # restart the thread
-        print("Starting GetStatsFunc Thread")
+        log.error("Stats Thread Died - Restarting")
         stats_thread = start_thread(GetStatsFunc)
     if not webserver_thread.is_alive():
         # restart the thread
-        print("Starting WebServer Thread")
+        log.error("Webserver Thread Died - Restarting")
         webserver_thread = start_thread(WebServer)
     sleep(api_timeout)
