@@ -32,8 +32,8 @@ log_handler.setFormatter(log_formatter)
 log = logging.getLogger("Node-Exporter")
 log.setLevel(LOGLEVEL)
 log.addHandler(log_handler)
-log.info("Zerto-Node-Exporter - Version {version}")
-log.info("Log Level: {LOGLEVEL}")
+log.info(f"Zerto-Node-Exporter - Version {version}")
+log.info(f"Log Level: {LOGLEVEL}")
 log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
 
 # Global Variables
@@ -458,12 +458,6 @@ auth_thread = start_thread(ZvmAuthHandler)
 data_thread = start_thread(GetDataFunc)
 stats_thread = start_thread(GetStatsFunc)
 webserver_thread = start_thread(WebServer)
-
-#print("Probe thread: " + str(probe_thread))
-#print("Auth thread: " + str(auth_thread))
-#print("Data thread: " + str(data_thread))
-#print("Stats thread: " + str(stats_thread))
-#print("Webserver thread: " + str(webserver_thread))
 
 # loop indefinitely
 while True:
