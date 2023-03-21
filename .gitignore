@@ -1,2 +1,8 @@
-
+logs/*
 .DS_Store
+app/metrics
+app/metrics.txt
+app/statsmetrics
+app/statsmetrics.txt
+app/threads
+app/threads.txt

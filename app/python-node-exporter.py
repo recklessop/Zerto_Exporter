@@ -1,10 +1,10 @@
 import requests
 import http.server
 import socketserver
-import time
 import os
 import logging
 import threading
+from time import sleep
 from logging.handlers import RotatingFileHandler
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
@@ -32,8 +32,8 @@ log_handler.setFormatter(log_formatter)
 log = logging.getLogger("Node-Exporter")
 log.setLevel(LOGLEVEL)
 log.addHandler(log_handler)
-log.info("Zerto-Node-Exporter - Version " + version)
-log.info("Log Level: " + os.environ.get('LOGLEVEL'))
+log.info("Zerto-Node-Exporter - Version {version}")
+log.info("Log Level: {LOGLEVEL}")
 log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
 
 # Global Variables
@@ -65,7 +65,7 @@ def ZvmAuthHandler():
                 retries += 1
                 delay = 2 ** retries
                 log.error("Error while sending authentication request: " + str(e) + ". Retrying in " + str(delay) + " seconds")
-                time.sleep(delay)
+                sleep(delay)
                 continue
             else:
                 retries = 0
@@ -74,7 +74,7 @@ def ZvmAuthHandler():
             if 'access_token' not in responseJSON or 'expires_in' not in responseJSON:
                 log.error("Authentication response does not contain expected keys")
                 delay = 2 ** retries
-                time.sleep(delay)
+                sleep(delay)
                 retries += 1
                 continue
             
@@ -84,13 +84,13 @@ def ZvmAuthHandler():
             if response.status_code != 200:
                 log.error("Authentication request failed with status code " + str(response.status_code))
                 delay = 2 ** retries
-                time.sleep(delay)
+                sleep(delay)
                 retries += 1
                 continue
                 
         expiresIn -= 10 + delay
         log.debug("Token Expires in " + str(expiresIn) + " seconds")
-        time.sleep(10)
+        sleep(10)
 
 
 def GetStatsFunc():
@@ -205,10 +205,10 @@ def GetStatsFunc():
             txt_object.close()
 
             log.debug("Starting Sleep for " + str(scrape_speed) + " seconds")
-            time.sleep(scrape_speed)
+            sleep(scrape_speed)
         else:
             log.debug("Waiting 1 second for Auth Token")
-            time.sleep(1)
+            sleep(1)
 
 
 def GetDataFunc():
@@ -394,10 +394,10 @@ def GetDataFunc():
 
             # This function will get data every 10 seconds
             log.debug("Starting Sleep for " + str(scrape_speed) + " seconds")
-            time.sleep(scrape_speed)
+            sleep(scrape_speed)
         else:
             log.debug("Waiting 1 second for Auth Token")
-            time.sleep(1)
+            sleep(1)
 
 def ThreadProbe():
     log.debug("Thread Probe Started")
@@ -442,7 +442,7 @@ def WebServer():
     Handler = http.server.SimpleHTTPRequestHandler
 
     with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        log.info("Webserver running on port ", PORT)
+        log.info("Webserver running on port {PORT}")
         httpd.serve_forever()
 
 def start_thread(target_func):
@@ -459,11 +459,11 @@ data_thread = start_thread(GetDataFunc)
 stats_thread = start_thread(GetStatsFunc)
 webserver_thread = start_thread(WebServer)
 
-print("Probe thread: " + str(probe_thread))
-print("Auth thread: " + str(auth_thread))
-print("Data thread: " + str(data_thread))
-print("Stats thread: " + str(stats_thread))
-print("Webserver thread: " + str(webserver_thread))
+#print("Probe thread: " + str(probe_thread))
+#print("Auth thread: " + str(auth_thread))
+#print("Data thread: " + str(data_thread))
+#print("Stats thread: " + str(stats_thread))
+#print("Webserver thread: " + str(webserver_thread))
 
 # loop indefinitely
 while True:

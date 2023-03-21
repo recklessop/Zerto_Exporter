@@ -12,6 +12,6 @@ services:
       - ZVM_PORT=443
       - CLIENT_ID=api-script
       - CLIENT_SECRET=js51tDM8oappYUGRJBhF7bcsedNoHA5j
-      - LOGGING_LEVEL=INFO #Valid settings are CRITICAL, ERROR, WARNING, INFO, DEBUG
+      - LOGLEVEL=INFO #Valid settings are CRITICAL, ERROR, WARNING, INFO, DEBUG
     volumes:
       - "./app:/usr/src/app:rw"
