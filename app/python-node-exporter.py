@@ -403,21 +403,25 @@ def ThreadProbe():
     log.debug("Thread Probe Started")
     metricsDictionary = {}
 
+    log.debug("Is Auth Thread Alive")
     if auth_thread.is_alive():
         metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 1
     else:
         metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 0
 
+    log.debug("Is Data Thread Alive")
     if data_thread.is_alive():
         metricsDictionary["exporter_thread_status{thread=\"" + "DataStats" + "\"}"] = 1
     else:
         metricsDictionary["exporter_thread_status{thread=\"" + "DataStats" + "\"}"] = 0
 
+    log.debug("Is Stats Thread Alive")
     if stats_thread.is_alive():
         metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats" + "\"}"] = 1
     else:
         metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats" + "\"}"] = 0
 
+    log.debug("Writing Probe data to files")
     file_object = open('threads', 'w')
     txt_object = open('threads.txt', 'w')
     for item in metricsDictionary :
@@ -430,8 +434,11 @@ def ThreadProbe():
         txt_object.write(str(metricsDictionary[item]))
         txt_object.write("\n")
     
+    log.debug("Trying to Close probe txt files")
     file_object.close()
     txt_object.close()
+
+    log.debug("Probe Thread Going to Sleep")
     sleep(30)
 
 #----------------run http server on port 9999-----------------
