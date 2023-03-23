@@ -36,7 +36,7 @@ container_id = str(socket.gethostname())
 #set log line format including container_id
 log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
 
-log_handler = RotatingFileHandler(filename=f"../logs/Log-Main-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
+log_handler = RotatingFileHandler(filename=f"./logs/Log-Main-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
 log_handler.setFormatter(log_formatter)
 
 log = logging.getLogger("Node-Exporter")
