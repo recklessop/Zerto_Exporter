@@ -332,7 +332,7 @@ def GetDataFunc():
             ## VMs API
             log.debug("Getting VMs API")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
-            
+
             vmapi_json = {}
             try:
                 vmapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
@@ -361,6 +361,7 @@ def GetDataFunc():
             log.debug("Getting Scratch Volumes")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
 
+            volapi_json = {}
             try:
                 volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
                 volapi_json  = volapi.json()
@@ -386,6 +387,7 @@ def GetDataFunc():
             ## Volumes API for Journal Volumes
             log.debug("Getting Journal Volumes")
 
+            volapi_json = {}
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=journal"            
             try:
                 volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
