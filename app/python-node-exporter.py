@@ -44,8 +44,8 @@ log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host
 
 # Global Variables
 token = ""
-siteId = ""
-siteName = ""
+siteId = "NotSet"
+siteName = "NotSet"
 lastStats = CaseInsensitiveDict()
 
 # Authentication Thread which handles authentication and token refresh for ZVM API
@@ -628,7 +628,7 @@ def start_thread(target_func):
     return thread
 
 # start the threads
-probe_thread = start_thread(ThreadProbe)
+
 auth_thread = start_thread(ZvmAuthHandler)
 data_thread = start_thread(GetDataFunc)
 stats_thread = start_thread(GetStatsFunc)
