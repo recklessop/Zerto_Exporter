@@ -1,3 +1,5 @@
 requests
 tinydb
 tinydb-storage
+pyVmomi
+pyVim

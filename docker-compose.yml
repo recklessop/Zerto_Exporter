@@ -13,5 +13,8 @@ services:
       - CLIENT_ID=api-script
       - CLIENT_SECRET=js51tDM8oappYUGRJBhF7bcsedNoHA5j
       - LOGLEVEL=INFO #Valid settings are CRITICAL, ERROR, WARNING, INFO, DEBUG
+      - VCENTER_HOST=192.168.50.50
+      - VCENTER_USER=administrator@vsphere.local
+      - VCENTER_PASSWORD=password
     volumes:
       - "./app:/usr/src/app:rw"
