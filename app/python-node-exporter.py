@@ -308,28 +308,9 @@ def GetDataFunc():
             ds_json  = service.json()
             #log.debug(ds_json)
             for ds in ds_json :
-                log.debug("!!!!!!!!!!!!!!!! Datastore Info!!!!!!!!!!!!!!!!!")
-                log.debug(ds['DatastoreName'])
-                #log.debug(ds["Health"]["Status"])
-                log.debug(ds["Stats"]["NumVRAs"])
-                log.debug(ds["Stats"]["NumIncomingVMs"])
-                log.debug(ds["Stats"]["NumOutgoingVMs"])
-                log.debug(ds["Stats"]["Usage"]["Datastore"]["CapacityInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Datastore"]["FreeInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Datastore"]["UsedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Datastore"]["ProvisionedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Protected"]["UsedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Protected"]["ProvisionedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Recovery"]["UsedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Recovery"]["ProvisionedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Journal"]["UsedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Journal"]["ProvisionedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Scratch"]["UsedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Scratch"]["ProvisionedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Appliances"]["UsedInBytes"])
-                log.debug(ds["Stats"]["Usage"]["Zerto"]["Appliances"]["ProvisionedInBytes"])
 
-                #metricsDictionary["datastore_health_status{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName'] + "\"}"] = ds["Health"]["Status"]
+                log.debug(f"Processing {ds['DatastoreName']}")
+
                 metricsDictionary["datastore_vras{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = ds["Stats"]["NumVRAs"]
                 metricsDictionary["datastore_incoming_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = ds["Stats"]["NumIncomingVMs"]
                 metricsDictionary["datastore_outgoing_vms{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = ds["Stats"]["NumOutgoingVMs"]
@@ -349,6 +330,7 @@ def GetDataFunc():
                 metricsDictionary["datastore_usage_zerto_appliances_provisionedinbytes{datastoreIdentifier=\"" + ds['DatastoreIdentifier'] + "\",DatastoreName=\"" + ds['DatastoreName']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = ds["Stats"]["Usage"]["Zerto"]["Appliances"]["ProvisionedInBytes"]
 
             ## VMs API
+            log.debug("Getting VMs API")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
             vmapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             vmapi_json  = vmapi.json()
@@ -367,6 +349,7 @@ def GetDataFunc():
                 metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["SubStatus"]
 
             ## Volumes API for Scratch Volumes
+            log.debug("Getting Scratch Volumes")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
             volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             volapi_json  = volapi.json()
@@ -385,12 +368,15 @@ def GetDataFunc():
                     #metricsDictionary["scratch_volume_percentage_used{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = percentage_used
 
             ## Volumes API for Journal Volumes
+            log.debug("Getting Journal Volumes")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=journal"
             volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             volapi_json  = volapi.json()
 
             if(bool(volapi_json)):
+                log.debug("Journal Volumes Exist")
                 for volume in volapi_json :
+                    log.debug("Journal Volume: " + volume['ProtectedVm']['Name'] + "Calculating total size")
                     #metricsDictionary["scratch_volume_provisioned_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["ProvisionedInBytes"]
                     # Determine the key for a given VM, then see if the key is already in the dictionary, if it is add the next disk to the total. If not, create a new key.
                     metrickey = "vm_journal_volume_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"
@@ -412,6 +398,7 @@ def GetDataFunc():
                         metricsDictionary[metrickey] = 1
                     
             ## Write metrics to a human readable metrics.txt file as well as a metrics file that is easy to get in prometheus
+            log.debug("Writing metrics to file")
             file_object = open('metrics', 'w')
             txt_object = open('metrics.txt', 'w')
             for item in metricsDictionary :
@@ -426,6 +413,7 @@ def GetDataFunc():
             
             file_object.close()
             txt_object.close()
+            log.debug("Metrics written to file")
 
             # This function will get data every 10 seconds
             log.debug("Starting Sleep for " + str(scrape_speed) + " seconds")
