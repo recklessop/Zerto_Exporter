@@ -332,7 +332,8 @@ def GetDataFunc():
             ## VMs API
             log.debug("Getting VMs API")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
-
+            
+            vmapi_json = {}
             try:
                 vmapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
                 vmapi_json  = vmapi.json()
@@ -342,6 +343,7 @@ def GetDataFunc():
                 return
 
             log.debug("Got VMs API")
+            log.debug(vmapi_json)
             for vm in vmapi_json :
                 metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ActualRPO"]
                 metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ThroughputInMB"]
