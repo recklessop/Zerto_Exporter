@@ -23,7 +23,7 @@ api_timeout = int(os.environ.get('API_TIMEOUT', 5))
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 version = str(VERSION)
 
-#log_formatter = logging.Formatter('%(relativeCreated)6d %(threadName)s %(message)s')
+
 log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
 
 log_handler = RotatingFileHandler(filename='../logs/Log-Main.log', maxBytes=1024*1024*100, backupCount=5)
@@ -40,6 +40,7 @@ log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host
 token = ""
 lastStats = CaseInsensitiveDict()
 
+# Authentication Thread which handles authentication and token refresh for ZVM API
 def ZvmAuthHandler():
     log.debug("ZVMAuthHandler Thread Started")
     expiresIn = 0
@@ -93,6 +94,7 @@ def ZvmAuthHandler():
         sleep(10)
 
 
+# Thread which gets VM level encryption statistics from ZVM API
 def GetStatsFunc():
     tempdb = TinyDB(storage=MemoryStorage)
     dbvm = Query()
@@ -130,16 +132,11 @@ def GetStatsFunc():
                 VMName                            = "NA"
 
                 oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'])
-                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
-                #log.debug("All Database")
-                #log.debug(tempdb.all())
-                #log.debug("+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_+_")
+
                 log.info("Checking TempDB for VM " + vm['VmIdentifier'])
                 if (oldvmdata):
                     log.info(vm['VmIdentifier'] + " Record Found")
-                    log.debug("_*_*_*_*_*_*_*_*")
                     log.debug(oldvmdata[0])
-                    log.debug("_*_*_*_*_*_*_*_*")
                     log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
 
                     log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
@@ -164,20 +161,23 @@ def GetStatsFunc():
                     log.debug("CurrentPercentEncrypted " + str(CurrentPercentEncrypted))
 
                 else:
-                    log.info(vm['VmIdentifier'] + " No Record Found")
+                    log.info(vm['VmIdentifier'] + " No Record Found, Inserting into DB")
                     #insert original VM record to tempdb
                     log.debug(tempdb.insert(vm))
 
                     # update database with VM name, for easier display in Grafana Legends
                     uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/" + vm['VmIdentifier']
-                    vapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
-                    vapi_json  = vapi.json()
-                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
-                    #log.debug(vapi_json)
-                    #log.debug("!@!@!@!@!@!@!@!@!@!@!@")
-                    tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
-                    log.info(vm['VmIdentifier'] + " Added to temp vm db")
-                    VMName = vapi_json['VmName']
+                    try:
+                        vapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+                        vapi_json  = vapi.json()
+                    except Exception as e:
+                        log.error("Error while sending api request: " + str(e))
+                        VMName = "Unknown"
+                    else:
+                        log.debug("vapi_json: " + str(vapi_json))
+                        tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
+                        log.info("Added to temp vm db" + vm['VmIdentifier'] + " - " + vapi_json['VmName'])
+                        VMName = vapi_json['VmName']
 
                 # Store Calculated Metrics
                 metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName + "\"}"] = CurrentIops
@@ -210,7 +210,7 @@ def GetStatsFunc():
             log.debug("Waiting 1 second for Auth Token")
             sleep(1)
 
-
+# Function which retrieves stats from various ZVM APIs and stores them in a metrics file
 def GetDataFunc():
     tempdb = TinyDB(storage=MemoryStorage)
     dbvm = Query()
@@ -399,6 +399,7 @@ def GetDataFunc():
             log.debug("Waiting 1 second for Auth Token")
             sleep(1)
 
+# function which monitors the threads and restarts them if they die
 def ThreadProbe():
     while True:
         log.debug("Thread Probe Started")
