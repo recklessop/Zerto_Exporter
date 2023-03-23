@@ -30,7 +30,6 @@ vcenter_host = os.environ.get('VCENTER_HOST', 'vcenter.local')
 vcenter_user = os.environ.get('VCENTER_USER', 'administrator@vsphere.local')
 vcenter_pwd = os.environ.get('VCENTER_PASSWORD', 'supersecret')
 
-
 # Get the hostname of the machine
 container_id = str(socket.gethostname())
 
@@ -52,6 +51,13 @@ token = ""
 siteId = "NotSet"
 siteName = "NotSet"
 lastStats = CaseInsensitiveDict()
+
+# Check if vCenter is set, if not disable VRA metrics
+is_vcenter_set = True
+if vcenter_host == "vcenter.local":
+    log.error("vCenter Host not set. Please set the environment variable VCENTER_HOST, turning off VRA CPU and Memory metrics")
+    is_vcenter_set = False
+log.debug("vCenter data collection is enabled")
 
 # Authentication Thread which handles authentication and token refresh for ZVM API
 def ZvmAuthHandler():
@@ -483,31 +489,33 @@ def GetVraMetrics():
                 log.debug("Response from GET /v1/vras: %s", response.text)
                 # parse JSON response and get the name of each VRA
                 
-                # Disable SSL certificate verification
-                context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-                context.verify_mode = ssl.CERT_NONE
+                if is_vcenter_set:
+                    # Disable SSL certificate verification
+                    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+                    context.verify_mode = ssl.CERT_NONE
 
-                # connect to vCenter Server
-                si = None
-                try:
-                    si = SmartConnect(host=vcenter_host, user=vcenter_user, pwd=vcenter_pwd, sslContext=context)
-                    log.debug("Connected to vCenter Server %s", vcenter_host)
-                except Exception as e:
-                    log.error(f"Error connecting to vCenter Server: {e}")
-                    return
+                    # connect to vCenter Server
+                    si = None
+                    try:
+                        si = SmartConnect(host=vcenter_host, user=vcenter_user, pwd=vcenter_pwd, sslContext=context)
+                        log.debug("Connected to vCenter Server %s", vcenter_host)
+                    except Exception as e:
+                        log.error(f"Error connecting to vCenter Server: {e}")
+                        return
 
-                
-                # get the root folder of the vCenter Server
-                content = si.RetrieveContent()
-                root_folder = content.rootFolder
+                    
+                    # get the root folder of the vCenter Server
+                    content = si.RetrieveContent()
+                    root_folder = content.rootFolder
 
-                # create a view for all VMs on the vCenter Server
-                view_manager = content.viewManager
-                vm_view = view_manager.CreateContainerView(root_folder, [vim.VirtualMachine], True)
+                    # create a view for all VMs on the vCenter Server
+                    view_manager = content.viewManager
+                    vm_view = view_manager.CreateContainerView(root_folder, [vim.VirtualMachine], True)
 
-                
-                
-                vras = response.json()
+                    
+                    
+                    vras = response.json()
+                    
                 log.debug("VRA names: %s", vras)
                 log.debug(type(vras))
                 for vra in vras :
@@ -529,25 +537,25 @@ def GetVraMetrics():
 
 
                     # get the CPU and memory usage for each VRA
+                    if is_vcenter_set:
+                        vm = None
+                        for vm_obj in vm_view.view:
+                            if vm_obj.name == vra['VraName']:
+                                vm = vm_obj
+                                break
+                                
+                        if vm is not None:
+                            log.debug("Found VRA VM in vCenter with name %s", vra['VraName'])
+                            # get the CPU usage and memory usage for the VM
+                            cpu_usage_mhz = vm.summary.quickStats.overallCpuUsage
+                            memory_usage_mb = vm.summary.quickStats.guestMemoryUsage
 
-                    vm = None
-                    for vm_obj in vm_view.view:
-                        if vm_obj.name == vra['VraName']:
-                            vm = vm_obj
-                            break
-                            
-                    if vm is not None:
-                        log.debug("Found VRA VM in vCenter with name %s", vra['VraName'])
-                        # get the CPU usage and memory usage for the VM
-                        cpu_usage_mhz = vm.summary.quickStats.overallCpuUsage
-                        memory_usage_mb = vm.summary.quickStats.guestMemoryUsage
-
-                        # print the CPU and memory usage for the VM
-                        log.info(f"VM {vm.name} (name: {vra['VraName']}) has CPU usage of {cpu_usage_mhz} MHz and memory usage of {memory_usage_mb} MB")
-                        metricsDictionary["vra_cpu_usage_mhz{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = cpu_usage_mhz
-                        metricsDictionary["vra_memory_usage_mb{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = memory_usage_mb
-                    else:
-                        log.info(f"No VM found with name {vra_name}")
+                            # print the CPU and memory usage for the VM
+                            log.info(f"VM {vm.name} (name: {vra['VraName']}) has CPU usage of {cpu_usage_mhz} MHz and memory usage of {memory_usage_mb} MB")
+                            metricsDictionary["vra_cpu_usage_mhz{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = cpu_usage_mhz
+                            metricsDictionary["vra_memory_usage_mb{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = memory_usage_mb
+                        else:
+                            log.info(f"No VM found with name {vra_name}")
 
             # Disconnect from vCenter
             Disconnect(si)
