@@ -5,6 +5,7 @@ import os
 import ssl
 import logging
 import threading
+import socket
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim
 from time import sleep
@@ -30,9 +31,13 @@ vcenter_user = os.environ.get('VCENTER_USER', 'administrator@vsphere.local')
 vcenter_pwd = os.environ.get('VCENTER_PASSWORD', 'supersecret')
 
 
+# Get the hostname of the machine
+container_id = str(socket.gethostname())
+
+#set log line format including container_id
 log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
 
-log_handler = RotatingFileHandler(filename='../logs/Log-Main.log', maxBytes=1024*1024*100, backupCount=5)
+log_handler = RotatingFileHandler(filename=f"../logs/Log-Main-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
 log_handler.setFormatter(log_formatter)
 
 log = logging.getLogger("Node-Exporter")
