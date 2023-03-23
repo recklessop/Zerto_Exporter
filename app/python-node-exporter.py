@@ -236,7 +236,7 @@ def GetStatsFunc():
                         VMName = vapi_json['VmName']
 
                 # Store Calculated Metrics
-                metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentIops
+                metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + str(vm['VpgIdentifier']) + "\",VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(VMName)  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = CurrentIops
                 metricsDictionary["vm_WriteCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentWriteCounterInMBs
                 metricsDictionary["vm_SyncCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentSyncCounterInMBs
                 metricsDictionary["vm_NetworkTrafficCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentNetworkTrafficCounterInMBs
@@ -351,17 +351,22 @@ def GetDataFunc():
             log.debug("Got VMs API")
             log.debug(vmapi_json)
             for vm in vmapi_json :
-                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ActualRPO"]
-                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ThroughputInMB"]
-                metricsDictionary["vm_iops{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["IOPs"]
-                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
-                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
-                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalUsedStorageMb"]
-                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["OutgoingBandWidthInMbps"]
-                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["UsedStorageInMB"]
-                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ProvisionedStorageInMB"]
-                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["Status"]
-                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["SubStatus"]
+                log.debug("Processing VM: " + str(vm['VmName']))
+                log.debug(vm)
+                if not isinstance(vm["ActualRPO"], int):
+                    vm["ActualRPO"] = -1
+                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["ActualRPO"]
+                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["ThroughputInMB"]
+                metricsDictionary["vm_iops{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["IOPs"]
+                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
+                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
+                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalUsedStorageMb"]
+                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["OutgoingBandWidthInMbps"]
+                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["UsedStorageInMB"]
+                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ProvisionedStorageInMB"]
+                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["Status"]
+                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["SubStatus"]
+                log.debug("Processed VM: " + str(vm['VmName']))
 
             ## Volumes API for Scratch Volumes
             log.debug("Getting Scratch Volumes")
@@ -555,7 +560,7 @@ def GetVraMetrics():
                             metricsDictionary["vra_cpu_usage_mhz{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = cpu_usage_mhz
                             metricsDictionary["vra_memory_usage_mb{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = memory_usage_mb
                         else:
-                            log.info(f"No VM found with name {vra_name}")
+                            log.info(f"No VM found with name {vra['VraName']}")
 
             # Disconnect from vCenter
             Disconnect(si)
