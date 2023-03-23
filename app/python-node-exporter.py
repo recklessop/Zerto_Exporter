@@ -332,9 +332,16 @@ def GetDataFunc():
             ## VMs API
             log.debug("Getting VMs API")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/"
-            vmapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
-            vmapi_json  = vmapi.json()
-            #log.debug(vmapi_json)
+
+            try:
+                vmapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
+                vmapi_json  = vmapi.json()
+            except Exception as e:
+                log.error("Error while sending api request: " + str(e))
+                VMName = "Unknown"
+                return
+
+            log.debug("Got VMs API")
             for vm in vmapi_json :
                 metricsDictionary["vm_actualrpo{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ActualRPO"]
                 metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + vm['VmName'] + "\",VmRecoveryVRA=\"" + vm["RecoveryHostName"] + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ThroughputInMB"]
@@ -351,9 +358,16 @@ def GetDataFunc():
             ## Volumes API for Scratch Volumes
             log.debug("Getting Scratch Volumes")
             uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=scratch"
-            volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
-            volapi_json  = volapi.json()
 
+            try:
+                volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
+                volapi_json  = volapi.json()
+            except Exception as e:
+                log.error("Error while sending api request: " + str(e))
+                VMName = "Unknown"
+                return
+
+            log.debug("Got Scratch Volumes API")
             if(bool(volapi_json)):
                 for volume in volapi_json :
                     #metricsDictionary["scratch_volume_provisioned_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["ProvisionedInBytes"]
@@ -369,10 +383,17 @@ def GetDataFunc():
 
             ## Volumes API for Journal Volumes
             log.debug("Getting Journal Volumes")
-            uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=journal"
-            volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
-            volapi_json  = volapi.json()
 
+            uri = "https://" + zvm_url + ":" + zvm_port + "/v1/volumes?volumeType=journal"            
+            try:
+                volapi = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
+                volapi_json  = volapi.json()
+            except Exception as e:
+                log.error("Error while sending api request: " + str(e))
+                VMName = "Unknown"
+                return
+
+            log.debug("Got Journal Volumes API")
             if(bool(volapi_json)):
                 log.debug("Journal Volumes Exist")
                 for volume in volapi_json :
@@ -631,7 +652,7 @@ webserver_thread = start_thread(WebServer)
 # loop indefinitely
 while True:
     # check if any thread has crashed
-    sleep(2)
+    sleep(10)
     if not probe_thread.is_alive():
         # restart the thread
         log.error("Probe Thread Died - Restarting")
