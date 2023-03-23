@@ -591,33 +591,34 @@ def GetVraMetrics():
 
 # function which monitors the threads and restarts them if they die
 def ThreadProbe():
+    global container_id
     while True:
         log.debug("Thread Probe Started")
         metricsDictionary = {}
 
         log.debug("Is Auth Thread Alive")
         if auth_thread.is_alive():
-            metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 1
+            metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 1
         else:
-            metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler" + "\"}"] = 0
+            metricsDictionary["exporter_thread_status{thread=\"" + "AuthHandler"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
         log.debug("Is Data Thread Alive")
         if data_thread.is_alive():
-            metricsDictionary["exporter_thread_status{thread=\"" + "DataStats" + "\"}"] = 1
+            metricsDictionary["exporter_thread_status{thread=\"" + "DataStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 1
         else:
-            metricsDictionary["exporter_thread_status{thread=\"" + "DataStats" + "\"}"] = 0
+            metricsDictionary["exporter_thread_status{thread=\"" + "DataStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
         log.debug("Is Stats Thread Alive")
         if stats_thread.is_alive():
-            metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats" + "\"}"] = 1
+            metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 1
         else:
-            metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats" + "\"}"] = 0
+            metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
         log.debug("Is VRA Metrics Thread Alive")
         if vra_metrics_thread.is_alive():
-            metricsDictionary["exporter_thread_status{thread=\"" + "VraMetrics" + "\"}"] = 1
+            metricsDictionary["exporter_thread_status{thread=\"" + "VraMetrics"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 1
         else:
-            metricsDictionary["exporter_thread_status{thread=\"" + "VraMetrics" + "\"}"] = 0
+            metricsDictionary["exporter_thread_status{thread=\"" + "VraMetrics"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
         log.debug("Writing Probe data to files")
         file_object = open('threads', 'w')
@@ -665,6 +666,7 @@ data_thread = start_thread(GetDataFunc)
 stats_thread = start_thread(GetStatsFunc)
 vra_metrics_thread = start_thread(GetVraMetrics)
 webserver_thread = start_thread(WebServer)
+probe_thread = start_thread(ThreadProbe)
 
 # loop indefinitely
 while True:
