@@ -638,6 +638,7 @@ webserver_thread = start_thread(WebServer)
 # loop indefinitely
 while True:
     # check if any thread has crashed
+    sleep(2)
     if not probe_thread.is_alive():
         # restart the thread
         log.error("Probe Thread Died - Restarting")
