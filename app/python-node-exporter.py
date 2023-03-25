@@ -222,7 +222,7 @@ def GetStatsFunc():
                     log.debug(tempdb.insert(vm))
 
                     # update database with VM name, for easier display in Grafana Legends
-                    uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/" + vm['VmIdentifier']
+                    uri = "https://" + zvm_url + ":" + zvm_port + "/v1/vms/" + vm['VmIdentifier'] +"?vpgIdentifier=" + vm['VpgIdentifier']
                     try:
                         vapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
                         vapi_json  = vapi.json()
