@@ -173,8 +173,8 @@ def GetStatsFunc():
             statsapi = requests.get(url=uri, timeout=3, headers=h2, verify=verifySSL)
             statsapi_json  = statsapi.json()
             #log.debug(statsapi_json)
+
             for vm in statsapi_json:
-                #log.debug(vm)
                 oldvmdata = dict()
 
                 CurrentIops                       = 0
@@ -235,15 +235,15 @@ def GetStatsFunc():
                         log.info("Added to temp vm db" + vm['VmIdentifier'] + " - " + vapi_json['VmName'])
                         VMName = vapi_json['VmName']
 
-                # Store Calculated Metrics
-                metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + str(vm['VpgIdentifier']) + "\",VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(VMName)  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = CurrentIops
-                metricsDictionary["vm_WriteCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentWriteCounterInMBs
-                metricsDictionary["vm_SyncCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentSyncCounterInMBs
-                metricsDictionary["vm_NetworkTrafficCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentNetworkTrafficCounterInMBs
-                metricsDictionary["vm_EncryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentEncryptedLBs
-                metricsDictionary["vm_UnencryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentUnencryptedLBs
-                metricsDictionary["vm_TotalDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentTotalLBs
-                metricsDictionary["vm_PercentEncrypted{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentPercentEncrypted
+                    # Store Calculated Metrics
+                    metricsDictionary["vm_IoOperationsCounter{VpgIdentifier=\"" + str(vm['VpgIdentifier']) + "\",VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(VMName)  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = CurrentIops
+                    metricsDictionary["vm_WriteCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentWriteCounterInMBs
+                    metricsDictionary["vm_SyncCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentSyncCounterInMBs
+                    metricsDictionary["vm_NetworkTrafficCounterInMBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentNetworkTrafficCounterInMBs
+                    metricsDictionary["vm_EncryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentEncryptedLBs
+                    metricsDictionary["vm_UnencryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentUnencryptedLBs
+                    metricsDictionary["vm_TotalDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentTotalLBs
+                    metricsDictionary["vm_PercentEncrypted{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + VMName  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentPercentEncrypted
 
             ## Write metrics to a human readable metrics.txt file as well as a metrics file that is easy to get in prometheus
             file_object = open('statsmetrics', 'w')
@@ -352,21 +352,29 @@ def GetDataFunc():
             log.debug(vmapi_json)
             for vm in vmapi_json :
                 log.debug("Processing VM: " + str(vm['VmName']))
-                log.debug(vm)
-                if not isinstance(vm["ActualRPO"], int):
-                    vm["ActualRPO"] = -1
-                metricsDictionary["vm_actualrpo{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["ActualRPO"]
-                metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["ThroughputInMB"]
-                metricsDictionary["vm_iops{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["IOPs"]
-                metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
-                metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
-                metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalUsedStorageMb"]
-                metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["OutgoingBandWidthInMbps"]
-                metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["UsedStorageInMB"]
-                metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ProvisionedStorageInMB"]
-                metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["Status"]
-                metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["SubStatus"]
-                log.debug("Processed VM: " + str(vm['VmName']))
+                log.debug("Checking VM " + vm['VmIdentifier'] + " on Protected Site " + vm['ProtectedSite']['identifier'] + " against " + siteId)
+
+                if siteId == vm['ProtectedSite']['identifier']:
+                    log.debug("Found VM " + vm['VmIdentifier'] + " on Protected Site")
+
+                    if not isinstance(vm["ActualRPO"], int):
+                        vm["ActualRPO"] = -1
+                    metricsDictionary["vm_actualrpo{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["ActualRPO"]
+                    metricsDictionary["vm_throughput_in_mb{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["ThroughputInMB"]
+                    metricsDictionary["vm_iops{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["IOPs"]
+                    metricsDictionary["vm_journal_hard_limit{VmIdentifier=\"" + str(vm['VmIdentifier']) + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + str(siteId) + "\",SiteName=\"" + str(siteName) + "\"}"] = vm["JournalHardLimit"]["LimitValue"]
+                    metricsDictionary["vm_journal_warning_limit{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalWarningThreshold"]["LimitValue"]
+                    metricsDictionary["vm_journal_used_storage_mb{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["JournalUsedStorageMb"]
+                    metricsDictionary["vm_outgoing_bandwidth_in_mbps{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["OutgoingBandWidthInMbps"]
+                    metricsDictionary["vm_used_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["UsedStorageInMB"]
+                    metricsDictionary["vm_provisioned_storage_in_MB{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["ProvisionedStorageInMB"]
+                    metricsDictionary["vm_status{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["Status"]
+                    metricsDictionary["vm_substatus{VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",VmRecoveryVRA=\"" + str(vm["RecoveryHostName"]) + "\",VmPriority=\"" + str(vm['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vm["SubStatus"]
+                    log.debug("Processed VM: " + str(vm['VmName']))
+
+                else:
+                    log.debug("VM " + vm['VmIdentifier'] + " is protected to this site")
+
 
             ## Volumes API for Scratch Volumes
             log.debug("Getting Scratch Volumes")
@@ -412,7 +420,7 @@ def GetDataFunc():
             if(bool(volapi_json)):
                 log.debug("Journal Volumes Exist")
                 for volume in volapi_json :
-                    log.debug("Journal Volume: " + volume['ProtectedVm']['Name'] + "Calculating total size")
+                    log.debug("Journal Volume: " + volume['ProtectedVm']['Name'] + " Calculating total size...")
                     #metricsDictionary["scratch_volume_provisioned_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name'] + "\"}"] = volume["Size"]["ProvisionedInBytes"]
                     # Determine the key for a given VM, then see if the key is already in the dictionary, if it is add the next disk to the total. If not, create a new key.
                     metrickey = "vm_journal_volume_size_in_bytes{ProtectedVm=\"" + volume['ProtectedVm']['Name'] + "\", ProtectedVmIdentifier=\"" + volume['ProtectedVm']['Identifier'] + "\", OwningVRA=\"" + volume['OwningVm']['Name']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"
