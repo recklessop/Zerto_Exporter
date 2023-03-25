@@ -150,8 +150,9 @@ def ZvmAuthHandler():
 
 # Thread which gets VM level encryption statistics from ZVM API
 def GetStatsFunc():
-    tempdb = TinyDB(storage=MemoryStorage)
+    tempdb = TinyDB(storage=MemoryStorage) # ('./db.json')   used for storing db on disk for debugging
     dbvm = Query()
+    dbvpg = Query()
     while (True) :
         global token
         global siteId
@@ -187,13 +188,13 @@ def GetStatsFunc():
                 CurrentPercentEncrypted           = 0
                 VMName                            = "NA"
 
-                oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'])
+                oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'] and dbvpg.VpgIdentifier == vm['VpgIdentifier'])
 
                 log.info("Checking TempDB for VM " + vm['VmIdentifier'] + " in VPG " + vm['VpgIdentifier'])
-                if (oldvmdata and (oldvmdata[0]['VpgIdentifier'] != vm['VpgIdentifier'])):
-                    log.info(vm['VmIdentifier'] + " Record Found")
+                if (oldvmdata):
+                    log.info(vm['VmIdentifier'] + " Record Found, Updating DB")
                     log.debug(oldvmdata[0])
-                    log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
+                    log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier'] and dbvpg.VpgIdentifier == vm['VpgIdentifier']))
 
                     log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                     VMName                            = oldvmdata[0]['VmName']
@@ -232,7 +233,7 @@ def GetStatsFunc():
                     else:
                         log.debug("vapi_json: " + str(vapi_json))
                         tempdb.update({'VmName': vapi_json['VmName']}, dbvm.VmIdentifier == vm['VmIdentifier'])
-                        log.info("Added to temp vm db" + vm['VmIdentifier'] + " - " + vapi_json['VmName'])
+                        log.info("Added vm to tempdb " + vm['VmIdentifier'] + " - " + vapi_json['VmName'])
                         VMName = vapi_json['VmName']
 
                 # Store Calculated Metrics
