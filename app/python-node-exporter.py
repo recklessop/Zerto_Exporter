@@ -189,8 +189,8 @@ def GetStatsFunc():
 
                 oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'])
 
-                log.info("Checking TempDB for VM " + vm['VmIdentifier'])
-                if (oldvmdata):
+                log.info("Checking TempDB for VM " + vm['VmIdentifier'] + " in VPG " + vm['VpgIdentifier'])
+                if (oldvmdata and (oldvmdata[0]['VpgIdentifier'] != vm['VpgIdentifier'])):
                     log.info(vm['VmIdentifier'] + " Record Found")
                     log.debug(oldvmdata[0])
                     log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier']))
