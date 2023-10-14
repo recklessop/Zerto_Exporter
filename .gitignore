@@ -1,4 +1,5 @@
 logs/*
+.env/*
 .DS_Store
 app/metrics
 app/metrics.txt
@@ -8,5 +9,5 @@ app/threads
 app/threads.txt
 app/vrametrics
 app/vrametrics.txt
-app/logs/Log-Main-Justins-MBP.askey.com.log
-app/logs/Log-Main-Justins-MacBook-Pro.local.log
+app/__pycache__/*
+app/logs/*
