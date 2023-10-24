@@ -11,3 +11,5 @@ app/vrametrics
 app/vrametrics.txt
 app/__pycache__/*
 app/logs/*
+app/zvma10/__pycache__/*
+app/zvma9_7/__pycache__/*

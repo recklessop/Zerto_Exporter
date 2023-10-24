@@ -4,31 +4,32 @@ import socketserver
 import os
 import ssl
 import logging
+from logging.handlers import RotatingFileHandler
 import threading
 import socket
 from pyVim.connect import SmartConnect, Disconnect
 from pyVmomi import vim
 from time import sleep
-from logging.handlers import RotatingFileHandler
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
 from tinydb import TinyDB, Query
 from tinydbstorage.storage import MemoryStorage
 from version import VERSION
+from zvma10.vcenter import vcsite
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 verifySSL = os.getenv("VERIFY_SSL", 'False').lower() in ('true', '1', 't')
 zvm_url = os.environ.get('ZVM_HOST', '192.168.50.60')
 zvm_port = os.environ.get('ZVM_PORT', '443')
 client_id = os.environ.get('CLIENT_ID', 'api-script')
-client_secret = os.environ.get('CLIENT_SECRET', 'js51tDM8oappYUGRJBhF7bcsedNoHA5j')
+client_secret = os.environ.get('CLIENT_SECRET', 'fcYMFuA5TkIUwp6b3hDUxim0f32z8erk')
 scrape_speed = int(os.environ.get('SCRAPE_SPEED', 30))
 api_timeout = int(os.environ.get('API_TIMEOUT', 5))
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 version = str(VERSION)
-vcenter_host = os.environ.get('VCENTER_HOST', 'vcenter.local')
+vcenter_host = os.environ.get('VCENTER_HOST', '192.168.50.50')
 vcenter_user = os.environ.get('VCENTER_USER', 'administrator@vsphere.local')
-vcenter_pwd = os.environ.get('VCENTER_PASSWORD', 'supersecret')
+vcenter_pwd = os.environ.get('VCENTER_PASSWORD', 'Zertodata987!')
 
 # Get the hostname of the machine
 container_id = str(socket.gethostname())
@@ -50,6 +51,12 @@ log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host
 token = ""
 siteId = "NotSet"
 siteName = "NotSet"
+siteZvmVersion = ""
+siteVcVersion = ""
+siteZvmMajorVersion = ""
+siteZvmMinorVersion = ""
+siteZvmUpdateVersion = ""
+siteZvmPatchVersion = ""
 lastStats = CaseInsensitiveDict()
 
 # Check if vCenter is set, if not disable VRA metrics
@@ -58,6 +65,7 @@ if vcenter_host == "vcenter.local":
     log.error("vCenter Host not set. Please set the environment variable VCENTER_HOST, turning off VRA CPU and Memory metrics")
     is_vcenter_set = False
 log.debug("vCenter data collection is enabled")
+vc_connection = vcsite(vcenter_host, vcenter_user, vcenter_pwd, loglevel="debug")
 
 # Authentication Thread which handles authentication and token refresh for ZVM API
 def ZvmAuthHandler():
@@ -141,14 +149,25 @@ def ZvmAuthHandler():
             else:
                 siteId = str(responseJSON.get('SiteIdentifier'))
                 siteName = str(responseJSON.get('SiteName'))
+                siteZvmVersion = str(responseJSON.get('Version'))
+                siteVcVersion = str(responseJSON.get('SiteTypeVersion'))
+
+                # Break out ZVM version strings
+                siteZvmMajorVersion, siteZvmMinorVersion, siteZvmUpdateVersion = siteZvmVersion.split(".")
+                siteZvmUpdateVersion = siteZvmUpdateVersion[0]
+                if (len(siteZvmUpdateVersion) > 1):
+                    siteZvmPatchVersion = siteZvmUpdateVersion[1]
+                else:
+                    siteZvmPatchVersion = "0"
                 log.info("Site ID: " + siteId + " Site Name: " + siteName)
                 
         expiresIn -= 10 + delay
         log.debug("Token Expires in " + str(expiresIn) + " seconds")
         sleep(10)
 
-
+'''
 # Thread which gets VM level encryption statistics from ZVM API
+
 def GetStatsFunc():
     tempdb = TinyDB(storage=MemoryStorage) # ('./db.json')   used for storing db on disk for debugging
     dbvm = Query()
@@ -266,6 +285,7 @@ def GetStatsFunc():
         else:
             log.debug("Waiting 1 second for Auth Token")
             sleep(1)
+'''
 
 # Function which retrieves stats from various ZVM APIs and stores them in a metrics file
 def GetDataFunc():
@@ -497,44 +517,17 @@ def GetVraMetrics():
             try:
                 response = requests.get(url=uri, timeout=api_timeout, headers=h2, verify=verifySSL)
             except Exception as e:
-                log.error(f"Error connecting to {endpoint}: {e}")
+                log.error(f"Error connecting to {uri}: {e}")
                 return
             else:
                 log.debug("Response from GET /v1/vras: %s", response.text)
                 # parse JSON response and get the name of each VRA
-                
-                if is_vcenter_set:
-                    # Disable SSL certificate verification
-                    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-                    context.verify_mode = ssl.CERT_NONE
 
-                    # connect to vCenter Server
-                    si = None
-                    try:
-                        si = SmartConnect(host=vcenter_host, user=vcenter_user, pwd=vcenter_pwd, sslContext=context)
-                        log.debug("Connected to vCenter Server %s", vcenter_host)
-                    except Exception as e:
-                        log.error(f"Error connecting to vCenter Server: {e}")
-                        return
-
-                    
-                    # get the root folder of the vCenter Server
-                    content = si.RetrieveContent()
-                    root_folder = content.rootFolder
-
-                    # create a view for all VMs on the vCenter Server
-                    view_manager = content.viewManager
-                    vm_view = view_manager.CreateContainerView(root_folder, [vim.VirtualMachine], True)
-
-                    
-                    
-                    vras = response.json()
+                vras = response.json()
                     
                 log.debug("VRA names: %s", vras)
                 log.debug(type(vras))
-                for vra in vras :
-                    #vra_names.append(vra['VraName'])
-                    
+                for vra in vras :     
                     # Gather other VRA Metrics from Zerto API into Metrics Diectionary
                     metricsDictionary["vra_memory_in_GB{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vra["MemoryInGB"]
                     metricsDictionary["vra_vcpu_count{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vra["NumOfCpus"]
@@ -548,31 +541,25 @@ def GetVraMetrics():
 
             
                     log.debug("VRA Name: %s", vra['VraName'])
-
+                    log.info(f"vCenter info: T/F = {is_vcenter_set} Host: {vcenter_host} u: {vcenter_user} p: {vcenter_pwd}")
 
                     # get the CPU and memory usage for each VRA
                     if is_vcenter_set:
-                        vm = None
-                        for vm_obj in vm_view.view:
-                            if vm_obj.name == vra['VraName']:
-                                vm = vm_obj
-                                break
-                                
-                        if vm is not None:
-                            log.debug("Found VRA VM in vCenter with name %s", vra['VraName'])
+                        log.debug(f"vCenter Info Is Valid... Trying to get CPU and Memory usage for VRAs")
+                        try:
+                            log.debug("Trying to get stats from vc module")
+                            vradata = vc_connection.get_cpu_mem_used(vra['VraName'])
+                        
                             # get the CPU usage and memory usage for the VM
-                            cpu_usage_mhz = vm.summary.quickStats.overallCpuUsage
-                            memory_usage_mb = vm.summary.quickStats.guestMemoryUsage
+                            cpu_usage_mhz = vradata[0]
+                            memory_usage_mb = vradata[1]
 
                             # print the CPU and memory usage for the VM
-                            log.info(f"VM {vm.name} (name: {vra['VraName']}) has CPU usage of {cpu_usage_mhz} MHz and memory usage of {memory_usage_mb} MB")
+                            log.debug(f"VRA {vra['VraName']}) has CPU usage of {cpu_usage_mhz} MHz and memory usage of {memory_usage_mb} MB")
                             metricsDictionary["vra_cpu_usage_mhz{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = cpu_usage_mhz
                             metricsDictionary["vra_memory_usage_mb{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = memory_usage_mb
-                        else:
+                        except:
                             log.info(f"No VM found with name {vra['VraName']}")
-
-            # Disconnect from vCenter
-            Disconnect(si)
             
             ## Write metrics to a human readable metrics.txt file as well as a metrics file that is easy to get in prometheus
             file_object = open('vrametrics', 'w')
@@ -591,7 +578,7 @@ def GetVraMetrics():
             txt_object.close()
 
             # This function will get data every 10 seconds
-            log.debug("Starting Sleep for " + str(scrape_speed) + " seconds")
+            log.debug("Starting Sleep for " + str(int(scrape_speed *2)) + " seconds")
             sleep(scrape_speed * 2)
         else:
             log.debug("Waiting 1 second for Auth Token")
@@ -617,11 +604,11 @@ def ThreadProbe():
         else:
             metricsDictionary["exporter_thread_status{thread=\"" + "DataStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
-        log.debug("Is Stats Thread Alive")
-        if stats_thread.is_alive():
-            metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 1
-        else:
-            metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
+        #log.debug("Is Stats Thread Alive")
+        #if stats_thread.is_alive():
+        #    metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 1
+        #else:
+        #    metricsDictionary["exporter_thread_status{thread=\"" + "EncryptionStats"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
         log.debug("Is VRA Metrics Thread Alive")
         if vra_metrics_thread.is_alive():
@@ -669,10 +656,9 @@ def start_thread(target_func):
     return thread
 
 # start the threads
-
 auth_thread = start_thread(ZvmAuthHandler)
 data_thread = start_thread(GetDataFunc)
-stats_thread = start_thread(GetStatsFunc)
+#stats_thread = start_thread(GetStatsFunc())
 vra_metrics_thread = start_thread(GetVraMetrics)
 webserver_thread = start_thread(WebServer)
 probe_thread = start_thread(ThreadProbe)
@@ -693,10 +679,10 @@ while True:
         # restart the thread
         log.error("Data Thread Died - Restarting")
         data_thread = start_thread(GetDataFunc)
-    if not stats_thread.is_alive():
-        # restart the thread
-        log.error("Stats Thread Died - Restarting")
-        stats_thread = start_thread(GetStatsFunc)
+    #if not stats_thread.is_alive():
+    #    # restart the thread
+    #    log.error("Stats Thread Died - Restarting")
+    #    stats_thread = start_thread(GetStatsFunc())
     if not vra_metrics_thread.is_alive():
         # restart the thread
         log.error("VRA Metrics Thread Died - Restarting")
