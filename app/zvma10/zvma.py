@@ -1,34 +1,59 @@
 # Class for holding variables related to a site.
-from pyVim.connect import SmartConnect, Disconnect
-from pyVmomi import vim, vmodl
+#from pyVim.connect import SmartConnect, Disconnect
+#from pyVmomi import vim, vmodl
+import threading
+import atexit
 import ssl
 import datetime
 import logging
+import requests
+from time import sleep
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from requests.structures import CaseInsensitiveDict
 from logging.handlers import RotatingFileHandler
 
 class zvmsite:
-    def __init__(self, host, username, password, clientid="zerto-client", clientsecret=None, port=443, verify_ssl=False, loglevel="INFO"):
+    def __init__(self, host, username=None, password=None, port=443, verify_ssl=False, client_id="zerto-client", client_secret=None, grant_type="password", loglevel="debug"):
         self.host = host
         self.port = port
         self.username = username
         self.password = password
         self.verify_ssl = verify_ssl
+        self.uri = "https://" + str(self.host) + ":" + str(self.port)
 
-        self.clientid = None
-        self.clientsecret = None
-        self.authtoken = None
-        self.refreshtoken = None
+        self.client_id = client_id
+        self.client_secret = None
+        self.grant_type = grant_type
 
-        self.id = None
-        self.name = None
+        self.__auththread__ = None
+        self.token = None
+        self.expiresIn = 0
+        self.token_expire_time = None
 
-        self.version = None
-        self.zvm_version_major = None
-        self.zvm_version_minor = None
-        self.zvm_version_update = None
-        self.zvm_version_patch = None
+        self.site_id = None
+        self.site_name = None
+        self.site_type = None
+        self.site_type_version = None
 
-        self.__conn__ = None
+        self.zvm_version = dict(
+            full=None,
+            major=None,
+            minor=None,
+            update=None,
+            patch=None
+        )
+
+        self.api_version = dict(
+            major = None,
+            minor = None,
+            update = None
+        )
+
+        self.apiheader = CaseInsensitiveDict()
+        self.apiheader["Accept"] = "application/json"
+
+        self.__connected__ = False
+        self._running = False
         self.LOGLEVEL = loglevel.upper()
 
         #set log line format including container_id
@@ -39,9 +64,27 @@ class zvmsite:
         self.log.setLevel(self.LOGLEVEL)
         self.log.addHandler(log_handler)
 
+        atexit.register(self.terminate)
+        self._running = True
+      
+    def terminate(self): 
+        self.log.debug("Terminating other threads")
+        self._running = False
+        self.__auththread__.join()
+
     def connect(self):
+        if (self.__auththread__ == None) or (not self.__auththread__.is_alive()):
+            self._running = True
+            self.__auththread__ = threading.Thread(target=self.__authhandler__)
+            self.__auththread__.start()
+            self.log.info(f"Starting authentication thread {self.__auththread__.ident}")
+        else:
+            self.log.info("Already connected to the ZVM")
+    
+
+    def __authhandler__(self):
         self.log.info(f"Log Level set to {self.LOGLEVEL}")
-        if self.__conn__ is None:
+        if not self.__connected__:
             context = ssl.create_default_context()
             if not self.verify_ssl:
                 print("dont verify SSL")
@@ -49,19 +92,139 @@ class zvmsite:
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
 
-            # connect to vCenter Server
-            si = None
             try:
-                self.__conn__ = SmartConnect(host=self.host, user=self.username, pwd=self.password, sslContext=context)
-                about_info = self.__conn__.content.about
-                version = about_info.version
-                self.version = version
-                self.log.debug("Connected to vCenter Server %s", self.host)
-            except Exception as e:
-                self.log.error(f"Error connecting to vCenter Server: {e}")
+                # connect to zvm Server
+                retries = 0
+                while self._running:
+                    if self.expiresIn < 30:
+                        self.log.debug(f"Trying login with the following: grant_type: {self.grant_type}, username: {self.username}, password: {self.password}, client_id: {self.client_id}")
+                        h = CaseInsensitiveDict()
+                        h["Content-Type"] = "application/x-www-form-urlencoded"
 
+                        d = CaseInsensitiveDict()
+                        d["grant_type"] = self.grant_type
+                        if self.grant_type == "password":
+                            d["client_id"] = self.client_id
+                            d["username"] = self.username
+                            d["password"] = self.password
+                        elif self.grant_type == "client_credentials":
+                            d["client_id"] = self.client_id
+                            d["client_secret"] = self.client_secret
+                        else:
+                            self.__connected__ = False
+                            self.log.error(f"Error connection credentials not defined")
+                                        
+                        uri = "https://" + str(self.host) + ":" + str(self.port) + "/auth/realms/zerto/protocol/openid-connect/token"
+                        delay = 0
+
+                        try:
+                            response = requests.post(url=uri, data=d, headers=h, verify=self.verify_ssl)
+                            response.raise_for_status()
+                        except requests.exceptions.RequestException as e:
+                            retries += 1
+                            delay = 2 ** retries
+                            self.log.error("Error while sending authentication request: " + str(e) + ". Retrying in " + str(delay) + " seconds")
+                            sleep(delay)
+                            continue
+                        else:
+                            retries = 0
+                        
+                        responseJSON = response.json()
+                        if 'access_token' not in responseJSON or 'expires_in' not in responseJSON:
+                            self.log.error("Authentication response does not contain expected keys")
+                            delay = 2 ** retries
+                            self.__connected__ = False
+                            sleep(delay)
+                            retries += 1
+                            continue
+                        
+                        self.token = str(responseJSON.get('access_token'))
+                        self.apiheader["Authorization"] = "Bearer " + self.token
+                        self.expiresIn = int(responseJSON.get('expires_in'))
+                        self.log.info("Authentication successful. Token expires in " + str(self.expiresIn) + " seconds")
+                        self.__connected__ = True
+
+                        if response.status_code != 200:
+                            self.log.error("Authentication request failed with status code " + str(response.status_code))
+                            delay = 2 ** retries
+                            self.__connected__ = False
+                            sleep(delay)
+                            retries += 1
+                            continue
+                            self.log.debug("Connected to ZVM Server %s", self.host)
+                    else:
+                        if not self._running:
+                            self.__auththread__.terminate()
+                        self.log.debug(f"Time till token expiration: {self.expiresIn} seconds")
+                        self.log.debug(f"Current auth token: {self.token}")
+                        sleep(10)
+                        self.expiresIn = self.expiresIn - 10
+
+            except Exception as e:
+                self.__connected__ = False
+                self.log.error(f"Error connecting to ZVM Server: {e}")
+
+    def __set_zvm_version__(self):
+        # Get Site ID and Name
+        uri = self.uri + "/v1/localsite"
+        delay = 0
+        try:
+            self.log.debug("Getting Site ID and Name")
+            
+            response = requests.get(url=uri, timeout=3, headers=self.apiheader, verify=self.verify_ssl)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            retries += 1
+            delay = 2 ** retries
+            self.log.error("Error while sending api request: " + str(e))
+        else:
+            retries = 0
+        
+        responseJSON = response.json()
+        self.log.debug(responseJSON)
+        if 'SiteIdentifier' not in responseJSON or 'SiteName' not in responseJSON:
+            self.log.error("LocalSite API response does not contain expected keys")
+            delay = 2 ** retries
+            #sleep(delay)
+            retries += 1
+        else:
+            self.site_id = str(responseJSON.get('SiteIdentifier'))
+            self.site_name = str(responseJSON.get('SiteName'))
+            self.zvm_version['full'] = str(responseJSON.get('Version'))
+            self.site_type_version = str(responseJSON.get('SiteTypeVersion'))
+            self.site_type = str(responseJSON.get('SiteType'))
+
+            # Break out ZVM version strings
+            self.zvm_version['major'], self.zvm_version['minor'], temp = self.zvm_version['full'].split(".")
+            self.zvm_version['update'] = temp[0]
+            if (len(temp) > 1):
+                self.zvm_version['patch'] = temp[1]
+            else:
+                self.zvm_version['patch'] = "0"
+            
+            self.log.info("Site ID: " + self.site_id + " Site Name: " + self.site_name + " Site Type: " + self.site_type ) 
+                 
     def version(self):
-        return self.version
+        if self.__connected__ and self._running:
+            if self.zvm_version['full'] == None:
+                self.__set_zvm_version__()
+            return self.zvm_version
+        else:
+            return "Error: Not Connected to ZVM"
+    
+    '''
+    def set_version(self):
+        # Set main zvm version variable
+        self.zvm_version = value
+
+        # Break out ZVM version string into Major, Minor, Update, Patch variables
+        self.zvm_version_major, self.zvm_version_minor, temp = self.zvm_version.split(".")
+        self.zvm_version_update = temp[0]
+        if (len(temp) > 1):
+            self.zvm_version_patch = temp[1]
+        else:
+            self.zvm_version_patch = "0"
+
 
     def get_cpu_mem_used(self, vra):
             if vra == None:
@@ -203,13 +366,38 @@ class zvmsite:
 
         return None
 
+    '''
 
     def disconnect(self):
-        if self.__conn__ == None:
-            self.log.debug(f"vCenter disconnect requested, but not currently connected.")
+        if self._running == False:
+            self.log.debug(f"ZVM disconnect requested, but not currently connected.")
             return
-        # Disconnect from vCenter
-        Disconnect(self.__conn__)
-        self.__conn__ = None
-        self.version = None
-        self.log.debug(f"Disconnected from vCenter")
+        
+        self.terminate()
+        # clear class variables
+        self._running = False
+        self.__connected__ = False
+        self.__auththread__ = None
+        self.token = None
+        self.expiresIn = 0
+        self.token_expire_time = None
+
+        self.site_id = None
+        self.site_name = None
+        self.site_type = None
+        self.site_type_version = None
+
+        self.zvm_version = dict(
+             major=None,
+             minor=None,
+             update=None,
+             patch=None
+        )
+
+        self.api_version = dict(
+            major = None,
+            minor = None,
+            update = None
+        )
+
+        self.log.debug(f"Disconnected from ZVM")
