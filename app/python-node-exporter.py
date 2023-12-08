@@ -16,8 +16,11 @@ from tinydb import TinyDB, Query
 from tinydbstorage.storage import MemoryStorage
 from version import VERSION
 from zvma10.vcenter import vcsite
+from zvma10.zvma import zvmsite
+from posthog import Posthog
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+callhomestats = os.getenv("CALL_HOME_STATS", 'True').lower() in ('false', '0', 'f')
 verifySSL = os.getenv("VERIFY_SSL", 'False').lower() in ('true', '1', 't')
 zvm_url = os.environ.get('ZVM_HOST', '192.168.50.60')
 zvm_port = os.environ.get('ZVM_PORT', '443')

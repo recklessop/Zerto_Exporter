@@ -1,31 +1,44 @@
-# Class for holding variables related to a site.
-#from pyVim.connect import SmartConnect, Disconnect
-#from pyVmomi import vim, vmodl
-import threading
 import atexit
+import threading
 import ssl
-import datetime
+import json
+import os
+import time
 import logging
+import socket
 import requests
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+from urllib.parse import urlencode
+from urllib.parse import urlparse
 from time import sleep
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
 from logging.handlers import RotatingFileHandler
+from posthog import Posthog
+import uuid
+from requests import Request, Session
+from .version import VERSION
 
 class zvmsite:
-    def __init__(self, host, username=None, password=None, port=443, verify_ssl=False, client_id="zerto-client", client_secret=None, grant_type="password", loglevel="debug"):
+    def __init__(self, host, username=None, password=None, port: int = 443, verify_ssl: bool = False, client_id="zerto-client", client_secret=None, grant_type="password", loglevel="debug", stats: bool = True):
+        self.stats = stats
         self.host = host
         self.port = port
         self.username = username
         self.password = password
         self.verify_ssl = verify_ssl
-        self.uri = "https://" + str(self.host) + ":" + str(self.port)
+        self.base_url = f"https://{self.host}:{self.port}"
+
+        if not self.verify_ssl:
+            # Disable ssl warnings if verify is set to false.
+            urllib3.disable_warnings(InsecureRequestWarning)
 
         self.client_id = client_id
         self.client_secret = None
         self.grant_type = grant_type
 
         self.__auththread__ = None
+        self.__version__ = VERSION
         self.token = None
         self.expiresIn = 0
         self.token_expire_time = None
@@ -35,369 +48,759 @@ class zvmsite:
         self.site_type = None
         self.site_type_version = None
 
-        self.zvm_version = dict(
-            full=None,
-            major=None,
-            minor=None,
-            update=None,
-            patch=None
-        )
+        self.zvm_version = dict(full=None, major=None, minor=None, update=None, patch=None)
 
-        self.api_version = dict(
-            major = None,
-            minor = None,
-            update = None
-        )
+        self.__user_agent_string__ = f"zerto_python_sdk_jpaul"
 
         self.apiheader = CaseInsensitiveDict()
         self.apiheader["Accept"] = "application/json"
+        self.apiheader['User-Agent'] = self.__user_agent_string__
 
         self.__connected__ = False
         self._running = False
         self.LOGLEVEL = loglevel.upper()
-
-        #set log line format including container_id
-        log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
-        log_handler = RotatingFileHandler(filename=f"./logs/Log-Main-vcenter.log", maxBytes=1024*1024*100, backupCount=5)
-        log_handler.setFormatter(log_formatter)
-        self.log = logging.getLogger("Node-Exporter")
-        self.log.setLevel(self.LOGLEVEL)
-        self.log.addHandler(log_handler)
-
-        atexit.register(self.terminate)
+        
+        self.setup_logging()
+        atexit.register(self.disconnect)
         self._running = True
-      
-    def terminate(self): 
-        self.log.debug("Terminating other threads")
-        self._running = False
-        self.__auththread__.join()
 
-    def connect(self):
-        if (self.__auththread__ == None) or (not self.__auththread__.is_alive()):
-            self._running = True
-            self.__auththread__ = threading.Thread(target=self.__authhandler__)
-            self.__auththread__.start()
-            self.log.info(f"Starting authentication thread {self.__auththread__.ident}")
-        else:
-            self.log.info("Already connected to the ZVM")
-    
+        # Get UUID
+        self.uuid = self.load_or_generate_uuid()
+
+        # Posthog stats setup
+        if self.stats:
+            self.setup_posthog()
+            self.posthog.capture(self.uuid, 'ZVMA10 Python Module Loaded')
+            self.log.debug("Sent PostHog Hook")
 
     def __authhandler__(self):
         self.log.info(f"Log Level set to {self.LOGLEVEL}")
         if not self.__connected__:
             context = ssl.create_default_context()
             if not self.verify_ssl:
-                print("dont verify SSL")
-                # Create an SSL context without certificate verification
+                self.log.debug("Disabling SSL verification")
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
 
-            try:
-                # connect to zvm Server
-                retries = 0
-                while self._running:
-                    if self.expiresIn < 30:
-                        self.log.debug(f"Trying login with the following: grant_type: {self.grant_type}, username: {self.username}, password: {self.password}, client_id: {self.client_id}")
-                        h = CaseInsensitiveDict()
-                        h["Content-Type"] = "application/x-www-form-urlencoded"
-
-                        d = CaseInsensitiveDict()
-                        d["grant_type"] = self.grant_type
-                        if self.grant_type == "password":
-                            d["client_id"] = self.client_id
-                            d["username"] = self.username
-                            d["password"] = self.password
-                        elif self.grant_type == "client_credentials":
-                            d["client_id"] = self.client_id
-                            d["client_secret"] = self.client_secret
-                        else:
-                            self.__connected__ = False
-                            self.log.error(f"Error connection credentials not defined")
-                                        
-                        uri = "https://" + str(self.host) + ":" + str(self.port) + "/auth/realms/zerto/protocol/openid-connect/token"
-                        delay = 0
-
-                        try:
-                            response = requests.post(url=uri, data=d, headers=h, verify=self.verify_ssl)
-                            response.raise_for_status()
-                        except requests.exceptions.RequestException as e:
-                            retries += 1
-                            delay = 2 ** retries
-                            self.log.error("Error while sending authentication request: " + str(e) + ". Retrying in " + str(delay) + " seconds")
-                            sleep(delay)
-                            continue
-                        else:
-                            retries = 0
-                        
-                        responseJSON = response.json()
-                        if 'access_token' not in responseJSON or 'expires_in' not in responseJSON:
-                            self.log.error("Authentication response does not contain expected keys")
-                            delay = 2 ** retries
-                            self.__connected__ = False
-                            sleep(delay)
-                            retries += 1
-                            continue
-                        
-                        self.token = str(responseJSON.get('access_token'))
-                        self.apiheader["Authorization"] = "Bearer " + self.token
-                        self.expiresIn = int(responseJSON.get('expires_in'))
-                        self.log.info("Authentication successful. Token expires in " + str(self.expiresIn) + " seconds")
-                        self.__connected__ = True
-
-                        if response.status_code != 200:
-                            self.log.error("Authentication request failed with status code " + str(response.status_code))
-                            delay = 2 ** retries
-                            self.__connected__ = False
-                            sleep(delay)
-                            retries += 1
-                            continue
-                            self.log.debug("Connected to ZVM Server %s", self.host)
-                    else:
-                        if not self._running:
-                            self.__auththread__.terminate()
-                        self.log.debug(f"Time till token expiration: {self.expiresIn} seconds")
-                        self.log.debug(f"Current auth token: {self.token}")
-                        sleep(10)
-                        self.expiresIn = self.expiresIn - 10
-
-            except Exception as e:
-                self.__connected__ = False
-                self.log.error(f"Error connecting to ZVM Server: {e}")
-
-    def __set_zvm_version__(self):
-        # Get Site ID and Name
-        uri = self.uri + "/v1/localsite"
-        delay = 0
-        try:
-            self.log.debug("Getting Site ID and Name")
-            
-            response = requests.get(url=uri, timeout=3, headers=self.apiheader, verify=self.verify_ssl)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            retries += 1
-            delay = 2 ** retries
-            self.log.error("Error while sending api request: " + str(e))
-        else:
             retries = 0
-        
-        responseJSON = response.json()
-        self.log.debug(responseJSON)
-        if 'SiteIdentifier' not in responseJSON or 'SiteName' not in responseJSON:
-            self.log.error("LocalSite API response does not contain expected keys")
-            delay = 2 ** retries
-            #sleep(delay)
-            retries += 1
+            while self._running:
+                if self.expiresIn < 30:
+                    self.log.debug(f"Authenticating to the server: {self.host}")
+                    headers = CaseInsensitiveDict()
+                    headers["Content-Type"] = "application/x-www-form-urlencoded"
+
+                    data = {
+                        "grant_type": self.grant_type,
+                        "client_id": self.client_id,
+                        "username": self.username,
+                        "password": self.password
+                    }
+                    if self.grant_type == "client_credentials":
+                        data["client_secret"] = self.client_secret
+
+                    uri = self.construct_url(path="auth/realms/zerto/protocol/openid-connect/token")
+                    response = self.make_api_request("POST", uri, data=data, headers=headers)
+
+                    if response and 'access_token' in response and 'expires_in' in response:
+                        self.token = str(response['access_token'])
+                        self.apiheader["Authorization"] = "Bearer " + self.token
+                        self.expiresIn = int(response['expires_in'])
+                        self.log.info("Authentication successful")
+                        self.__connected__ = True
+                    else:
+                        self.log.error("Authentication failed")
+                        sleep(2 ** retries)
+                        retries += 1
+                else:
+                    sleep(10)
+                    self.expiresIn -= 10
         else:
-            self.site_id = str(responseJSON.get('SiteIdentifier'))
-            self.site_name = str(responseJSON.get('SiteName'))
-            self.zvm_version['full'] = str(responseJSON.get('Version'))
-            self.site_type_version = str(responseJSON.get('SiteTypeVersion'))
-            self.site_type = str(responseJSON.get('SiteType'))
+            self.log.info("Authentication thread is already running")
+            print(f"Auth thread already running")
+
+    def setup_logging(self):
+        container_id = str(socket.gethostname())
+        log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
+        log_handler = RotatingFileHandler(filename=f"./logs/Log-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
+        log_handler.setFormatter(log_formatter)
+        self.log = logging.getLogger("Node-Exporter")
+        self.log.setLevel(self.LOGLEVEL)
+        self.log.addHandler(log_handler)
+
+    def __redact__(self, data):
+        sensitive_keys = ["password", "secret", "token"]  # Add any other keys that need redaction
+        redacted_data = {}
+
+        for key, value in data.items():
+            if key in sensitive_keys:
+                redacted_data[key] = "********"
+            else:
+                redacted_data[key] = value
+
+        return redacted_data
+
+    def load_or_generate_uuid(self):
+        uuid_path = 'uuid.txt'
+        if os.path.exists(uuid_path):
+            with open(uuid_path, 'r') as file:
+                saved_uuid = file.read().strip()
+                try:
+                    return str(uuid.UUID(saved_uuid))
+                except ValueError:
+                    pass  # Invalid UUID, generate a new one below
+        
+        new_uuid = str(uuid.uuid4())
+        with open(uuid_path, 'w') as file:
+            file.write(new_uuid)
+        return new_uuid
+
+    def setup_posthog(self):
+        self.posthog = Posthog(project_api_key='phc_HflqUkx9majhzm8DZva8pTwXFRnOn99onA9xPpK5HaQ', host='https://posthog.jpaul.io')
+        self.posthog.debug = True
+        self.posthog.identify(distinct_id=self.uuid)
+
+    def construct_url(self, path="", params=None):
+        full_url = f"{self.base_url}/{path}"
+        if params:
+            query_string = urlencode({k: str(v) for k, v in params.items() if v is not None})
+            full_url = f"{full_url}?{query_string}"
+        return full_url
+
+    def deconstruct_url(self, url):
+        parsed_url = urlparse(url)
+        base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+        path = parsed_url.path
+
+        return base_url, path
+    
+    def make_api_request(self, method, url, data=None, json_data=None, headers=None, timeout=3, test=None):
+        try:
+            headers = headers or {}
+            start_time = time.time()  # Record the start time
+            if method == "PUT":
+                # Create a Request object
+                headers['Content-Type'] = 'application/json'
+                data = json.dumps(json_data)
+                req = Request(method, url, data=data, headers=headers)
+
+                # Prepare the request
+                prepared_req = req.prepare()
+
+                # Print the prepared request details
+                self.log.debug("Prepared Request:")
+                self.log.debug(f"URL: {prepared_req.url}")
+                self.log.debug(f"Method: {prepared_req.method}")
+                self.log.debug(f"Headers: {prepared_req.headers}")
+                self.log.debug(f"Body: {prepared_req.body}")
+
+                # Send the request using a Session
+                with Session() as s:
+                    response = s.send(prepared_req, verify=self.verify_ssl)
+
+                # Print the response
+                self.log.debug(f"Response Status Code: {response.status_code}")
+                self.log.debug(response.text)
+            elif json_data is not None:
+                # If json_data is provided, serialize it as JSON and set the appropriate header
+                serialized_data = json.dumps(json_data)
+                headers['Content-Type'] = 'application/json'
+                self.log.debug(f"API Request using JSON Body: {serialized_data}")
+                response = requests.request(method, url, data=serialized_data, headers=headers, timeout=timeout, verify=self.verify_ssl)
+            else:
+                # If json_data is not provided, use data as-is
+                if data:
+                    self.log.debug(f"API Request using Form/Data Body: {self.__redact__(data)}")
+                response = requests.request(method, url, data=data, headers=headers, timeout=timeout, verify=self.verify_ssl)
+
+            end_time = time.time()
+            elapsed_time_ms = (end_time - start_time) * 1000
+            response.raise_for_status()
+            self.log.debug(f'API Request: {method} - {url}')
+
+            # Posthog stats setup
+            if self.stats:
+                temp_base, temp_path = self.deconstruct_url(url)
+                self.posthog.capture( self.uuid, 'API REQUEST',
+                {
+                    "url": temp_base,
+                    "port": self.port,
+                    "endpoint": temp_path,
+                    "method": method,
+                    "response_time_ms": int(elapsed_time_ms),
+                    "verify_ssl": self.verify_ssl, 
+                    "grant_type": self.grant_type,
+                    "status_code": str(response.status_code),
+                    "sdk_version": self.__version__
+                })
+                self.log.debug("Sent PostHog Hook")
+
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            self.log.error(f"Error while sending API request: {e}")
+            if e.response:
+                self.log.error(f"Response content: {e.response.text}")
+            return None
+
+    def connect(self):
+        if (self.__auththread__ is None) or (not self.__auththread__.is_alive()):
+            self._running = True
+            self.__auththread__ = threading.Thread(target=self.__authhandler__, daemon=True)
+            self.__auththread__.start()
+            self.log.info(f"Starting authentication thread {self.__auththread__.ident}")
+        else:
+            self.log.info("Already connected to the ZVM")
+
+    def disconnect(self):
+        self.log.debug("Disconnecting")
+        self._running = False
+        if self.__auththread__ and self.__auththread__.is_alive():
+            self.__auththread__.join(timeout=5) 
+     
+    def alert(self, alertidentifier=None):
+        
+        if alertidentifier is None:
+            self.log.error("Alert identifier is required for get_vpg function.")
+            raise ValueError("Alert identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/alerts/{alertidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+          
+    def alert_dismiss(self, alertidentifier=None):
+        
+        if alertidentifier is None:
+            self.log.error("Alert identifier is required for get_vpg function.")
+            raise ValueError("Alert identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/alerts/{alertidentifier}/dismiss", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)
+          
+    def alert_undismiss(self, alertidentifier=None):
+        
+        if alertidentifier is None:
+            self.log.error("Alert identifier is required for get_vpg function.")
+            raise ValueError("Alert identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/alerts/{alertidentifier}/undismiss", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)
+           
+    def alert_levels(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/alerts/levels", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+           
+    def alert_entities(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/alerts/entities", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+                 
+    def alert_helpidentifiers(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/alerts/helpidentifiers", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+      
+    def alerts(self, startdate=None, enddate=None, vpgid=None, zorgidentifier=None, level=None, 
+             entity=None, helpidentifier=None, isdismissed: bool = None):
+        
+        params = {
+            'startdate': startdate,
+            'enddate': enddate,
+            'vpgid': vpgid,
+            'zorgidentifier': zorgidentifier,
+            'level': level,
+            'entity': entity,
+            'helpidentifier': helpidentifier,
+            'isdismissed': isdismissed
+        }
+        
+        uri = self.construct_url("v1/alerts", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+       
+    def datastore(self, datastoreidentifier=None):
+        
+        if datastoreidentifier is None:
+            self.log.error("Datastore identifier is required for get_datastore function.")
+            raise ValueError("datastore identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/datastores/{datastoreidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+ 
+    def datastores(self, datadtoreidentifier=None):
+        
+        params = {
+        }
+        
+        uri = self.construct_url("v1/datastores", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_enable(self):
+                
+        params = {
+            "encryptionDetectionEnabled": True
+        }
+        
+        uri = self.construct_url("v1/encryptionDetection/state", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)
+
+    def encryptiondetection_disable(self):
+                
+        params = {
+            "encryptionDetectionEnabled": False
+        }
+        
+        uri = self.construct_url("v1/encryptionDetection/state", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)
+
+    def encryptiondetection_status(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/state", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_metrics_vms(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/metrics/vms", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_metrics_volumes(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/metrics/volumes", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_metrics_vpgs(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/metrics/vpgs", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_suspected_vms(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/suspected/vms", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_suspected_volumes(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/suspected/volumes", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def encryptiondetection_suspected_vpgs(self):
+                
+        params = {}
+        
+        uri = self.construct_url("v1/encryptionDetection/suspected/vpgs", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def event(self, eventidentifier=None):
+        
+        if eventidentifier is None:
+            self.log.error("Event identifier is required for get event function.")
+            raise ValueError("Event identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/{eventidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+                
+    def event_types(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/types", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+           
+    def event_entities(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/entities", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+                 
+    def event_categories(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/categories", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+      
+    def events(self, startdate=None, enddate=None, vpgid=None, sitename=None, zorgidentifier=None, eventtype=None, 
+             entitytype=None, category=None, username=None, alertidentifier=None):
+        
+        params = {
+            'startdate': startdate,
+            'enddate': enddate,
+            'vpgid': vpgid,
+            'sitename': sitename,
+            'zorgidentifier': zorgidentifier,
+            'eventtype': eventtype,
+            'entitytype': entitytype,
+            'category': category,
+            'username': username,
+            'alertidentifier': alertidentifier
+        }
+        
+        uri = self.construct_url("v1/events", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def local_site(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/localsite", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def local_site_pairing_statues(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/localsite/pairingstatuses", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def local_site_send_billing(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/localsite/settings/sendusage", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)
+     
+    def local_site_banner(self):
+
+        params = {
+        }
+        # uri is spelled incorrectly because it is also spelled incorrectly in zerto
+        uri = self.construct_url(f"v1/localsite/settings/logingbanner", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def local_site_banner_update(self, enabled: bool = None, loginbanner = None):
+
+        params = {
+        }
+
+        data = {
+            "isLoginBannerEnabled": enabled,
+            "loginBanner": loginbanner
+        }
+        # uri is spelled incorrectly because it is also spelled incorrectly in zerto
+        uri = self.construct_url(f"v1/localsite/settings/logingbanner", params)
+        return self.make_api_request("PUT", uri, json_data=data, headers=self.apiheader)
+                  
+    def license(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/license", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def license_delete(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/license", params)
+        return self.make_api_request("DELETE", uri, headers=self.apiheader)
+    
+    def license_apply(self, license=None):
+
+        if license is None:
+            self.log.error("A license key is required for apply license function.")
+            raise ValueError("License key is required.")
+
+        params = {
+        }
+
+        license = {
+            "licenseKey": license
+        }
+
+        
+        uri = self.construct_url(f"v1/license", params)
+        return self.make_api_request("PUT", uri, json_data=license, headers=self.apiheader)   
+  
+    def peer_sites(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/peersites", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def peer_site(self, siteidentifier=None):
+        if siteidentifier is None:
+            self.log.error("Site identifier is required for get site function.")
+            raise ValueError("Site identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/peersites/{siteidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+          
+    def peer_sites_pairing_statues(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/peersites/pairingstatuses", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+        
+    def peer_site_add(self, hostname=None, port=None, token=None):
+        missing_params = [param for param, value in [('hostname', hostname), ('port', port), ('token', token)] if value is None]
+        
+        if missing_params:
+            missing_params_str = ", ".join(missing_params)
+            error_message = f"Missing required parameter(s): {missing_params_str} for pair site function."
+            self.log.error(error_message)
+            raise ValueError(error_message)
+
+        params = {}
+
+        data = {
+            "hostname": hostname,
+            "port": port,
+            "token": token
+        }
+
+        uri = self.construct_url(f"v1/peersites", params)
+        return self.make_api_request("POST", uri, json_data=data, headers=self.apiheader)   
+
+    def peer_site_delete(self, siteidentifier=None, keepdisks: bool = True):
+        if siteidentifier is None:
+            self.log.error("Site identifier is required for delete site function.")
+            raise ValueError("Site identifier is required.")
+
+        params = {}
+
+        data = {
+            "iskeeptargetdisks": keepdisks
+        }
+        
+        uri = self.construct_url(f"v1/peersites/{siteidentifier}", params)
+        return self.make_api_request("DELETE", uri, json=data, headers=self.apiheader)
+    
+    def peer_site_pairing_token(self):
+        params = {}
+
+        uri = self.construct_url(f"v1/peersites/generatetoken", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)   
+
+
+
+
+    def tasks(self, startedbeforedate=None, startedafterdate=None, completedbeforedate=None, completedafterdate=None, tasktype=None, status=None):
+        
+        params = {
+            'startedbeforedate': startedbeforedate,
+            'startedafterdate': startedafterdate,
+            'completedbeforedate': completedbeforedate,
+            'completedafterdate': completedafterdate,
+            'type': tasktype,
+            'status': status
+        }
+        
+        uri = self.construct_url("v1/tasks", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def task(self, taskidentifier=None):
+        
+        if taskidentifier is None:
+            self.log.error("Task identifier is required for function.")
+            raise ValueError("Task identifier is required.")
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/tasks/{taskidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+                
+    def task_types(self):
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/tasks/types", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg(self, vpgidentifier=None):
+        
+        if vpgidentifier is None:
+            self.log.error("Vpg identifier is required for get_vpg function.")
+            raise ValueError("VM identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+      
+    def vpgs(self, vpgid=None, vpgname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
+             recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
+             zorgidentifier=None, priority=None, serviceprofileidentifier=None):
+        
+        params = {
+            'vpgid': vpgid,
+            'vpgname': vpgname,
+            'vpgstatus': vpgstatus,
+            'vpgsubstatus': vpgsubstatus,
+            'protectedsitetype': protectedsitetype,
+            'recoverysitetype': recoverysitetype,
+            'protectedsiteidentifier': protectedsiteidentifier,
+            'recoverysiteidentifier': recoverysiteidentifier,
+            'zorgidentifier': zorgidentifier,
+            'priority': priority,
+            'serviceprofileidentifier': serviceprofileidentifier
+        }
+        
+        uri = self.construct_url("v1/vpgs", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+    
+    def vpg_delete(self, vpgidentifier=None, keeprecoveryvolumes=True, force=True):
+        if vpgidentifier is None:
+            self.log.error("VPG identifier is required for delete_vpg function.")
+            raise ValueError("VPG identifier is required.")
+
+        # URL with vpgidentifier in the path
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}")
+
+        # Data to be sent in the request body
+        data = {
+            "keepRecoveryVolumes": keeprecoveryvolumes,
+            "force": force
+        }
+
+        # Make the POST request
+        return self.make_api_request("POST", uri, data=data, headers=self.apiheader)
+  
+    def vms(self, vmidentifier=None, vmname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
+             recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
+             zorgname=None, priority=None, includebackupvms: bool = None, includemountedvms: bool = None):
+        
+        params = {
+            'vmidentifier': vmidentifier,
+            'vmname': vmname,
+            'vpgstatus': vpgstatus,
+            'vpgsubstatus': vpgsubstatus,
+            'protectedsitetype': protectedsitetype,
+            'recoverysitetype': recoverysitetype,
+            'protectedsiteidentifier': protectedsiteidentifier,
+            'recoverysiteidentifier': recoverysiteidentifier,
+            'zorgname': zorgname,
+            'priority': priority,
+            'includebackupvms': includebackupvms,
+            'includemountedvms': includemountedvms
+        }
+        
+        uri = self.construct_url("v1/vms", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vm(self, vmidentifier=None, vpgidentifier=None, includebackupvms: bool = None, includemountedvms: bool = None):
+        
+        if vmidentifier is None:
+            self.log.error("VM identifier is required for get_vm function.")
+            raise ValueError("VM identifier is required.")
+
+        params = {
+            'vpgidentifier': vpgidentifier,
+            'includebackupvms': includebackupvms,
+            'includemountedvms': includemountedvms
+        }
+        
+        uri = self.construct_url(f"v1/vms/{vmidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+    
+    def vm_pointintime(self, vmidentifier=None, vpgidentifier=None, includebackupvms: bool = None, includemountedvms: bool = None):
+        
+        if vmidentifier is None:
+            self.log.error("VM identifier is required for get_vm function.")
+            raise ValueError("VM identifier is required.")
+
+        params = {
+            'vpgidentifier': vpgidentifier,
+            'includebackupvms': includebackupvms,
+            'includemountedvms': includemountedvms
+        }
+        
+        uri = self.construct_url(f"v1/vms/{vmidentifier}/pointsintime", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+      
+    def volumes(self, volumetype=None, vpgidentifier=None, datastoreidentifier=None, protectedvmidentifier=None, owningvmidentifier=None):
+        if volumetype:
+            valid_volumetypes = ["scratch", "journal", "recovery", "protected", "appliance"]
+            
+            # Convert volumetype to lowercase for case-insensitive comparison
+            volumetype_lower = volumetype.lower()
+
+            if volumetype_lower not in valid_volumetypes:
+                raise ValueError(f"Invalid volumetype: {volumetype}. Must be one of {', '.join(valid_volumetypes)}")
+
+        params = {
+            'volumetype': volumetype,
+            'vpgidentifier': vpgidentifier,
+            'datastoreidentifier': datastoreidentifier,
+            'protectedvmidentifier': protectedvmidentifier,
+            'owningvmidentifier': owningvmidentifier
+        }
+        
+        uri = self.construct_url("v1/volumes", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+    
+    def __set_zvm_version__(self):
+        uri = self.construct_url("v1/localsite")
+        response = self.make_api_request("GET", uri, headers=self.apiheader)
+        if response:
+            self.site_id = str(response.get('SiteIdentifier', ''))
+            self.site_name = str(response.get('SiteName', ''))
+            self.zvm_version['full'] = str(response.get('Version', ''))
+            self.site_type_version = str(response.get('SiteTypeVersion', ''))
+            self.site_type = str(response.get('SiteType', ''))
 
             # Break out ZVM version strings
-            self.zvm_version['major'], self.zvm_version['minor'], temp = self.zvm_version['full'].split(".")
-            self.zvm_version['update'] = temp[0]
-            if (len(temp) > 1):
-                self.zvm_version['patch'] = temp[1]
-            else:
-                self.zvm_version['patch'] = "0"
-            
-            self.log.info("Site ID: " + self.site_id + " Site Name: " + self.site_name + " Site Type: " + self.site_type ) 
-                 
+            version_parts = self.zvm_version['full'].split(".")
+            if len(version_parts) >= 3:
+                self.zvm_version['major'], self.zvm_version['minor'], temp = version_parts
+                self.zvm_version['update'] = temp[0]
+                self.zvm_version['patch'] = temp[1] if len(temp) > 1 else "0"
+            self.log.info(f"Site ID: {self.site_id}, Site Name: {self.site_name}, Site Type: {self.site_type}")
+
     def version(self):
         if self.__connected__ and self._running:
-            if self.zvm_version['full'] == None:
+            if self.zvm_version['full'] is None:
                 self.__set_zvm_version__()
             return self.zvm_version
         else:
             return "Error: Not Connected to ZVM"
-    
-    '''
-    def set_version(self):
-        # Set main zvm version variable
-        self.zvm_version = value
-
-        # Break out ZVM version string into Major, Minor, Update, Patch variables
-        self.zvm_version_major, self.zvm_version_minor, temp = self.zvm_version.split(".")
-        self.zvm_version_update = temp[0]
-        if (len(temp) > 1):
-            self.zvm_version_patch = temp[1]
-        else:
-            self.zvm_version_patch = "0"
-
-
-    def get_cpu_mem_used(self, vra):
-            if vra == None:
-                self.log.debug("Get_cpu_mem_used called with no vm name...returning no data")
-                return
-            if self.__conn__ == None:
-                self.log.debug("Trying to get VRA stats without vCenter connection, trying to connect")
-                self.connect()
-
-            # get the root folder of the vCenter Server
-            try:
-                content = self.__conn__.RetrieveContent()
-                root_folder = content.rootFolder
-            except:
-                self.log.debug("Could not get content from vCenter when trying to get VRA stats")
-
-            # create a view for all VMs on the vCenter Server
-            view_manager = content.viewManager
-            vm_view = view_manager.CreateContainerView(root_folder, [vim.VirtualMachine], True)
-
-            vm = None
-            for vm_obj in vm_view.view:
-                if str(vm_obj.name) == str(vra):
-                    vm = vm_obj
-                if vm is not None:
-                    self.log.debug(f"Found VRA VM in vCenter with name {vm.name}")
-                    # get the CPU usage and memory usage for the VM
-                    cpu_usage_mhz = vm.summary.quickStats.overallCpuUsage
-                    memory_usage_mb = vm.summary.quickStats.guestMemoryUsage
-
-                    # print the CPU and memory usage for the VM
-                    self.log.info(f"VM {vm.name} has CPU usage of {cpu_usage_mhz} MHz and memory usage of {memory_usage_mb} MB")
-                    return [cpu_usage_mhz, memory_usage_mb]
-                else:
-                    self.log.debug(f"{vm_obj.name} is not a VRA")
-            raise ValueError("No VRA Found")
-            
-    def get_write_iops(self, vm):
-        try:
-            content = self.__conn__.RetrieveContent()
-        except:
-            self.log.debug("Could not get content from vCenter when trying to get VRA stats")
-
-        # Find the virtual machine by name
-        vm_name = str(vm)
-        vm = None
-
-        for obj in content.viewManager.CreateContainerView(content.rootFolder, [vim.VirtualMachine], True).view:
-            if obj.name == vm_name:
-                vm = obj
-                break
-
-        if vm is None:
-            print(f"Virtual machine '{vm_name}' not found")
-            return
-
-        # Get performance manager
-        perf_manager = content.perfManager
-
-        # Define the metric ID for write IOPS (counterId = 6)
-        metric_id = vim.PerformanceManager.MetricId(counterId=6, instance="")
-
-        # calculate the last 60 seconds
-        end_time = datetime.datetime.now()
-        start_time = end_time - datetime.timedelta(seconds=60)
-
-        # Create a query specification for roll-up data
-        query_spec = vim.PerformanceManager.QuerySpec(
-            entity=vm,
-            metricId=[metric_id],
-            format="normal",
-            startTime=start_time,
-            endTime=end_time,
-            intervalId=20,  # Use an appropriate interval for the roll-up data
-        )
-
-
-        # Query the performance statistics
-        result = perf_manager.QueryStats(querySpec=[query_spec])
-
-        if result:
-            # Get the average write IOPS for the last 60 seconds
-            average_write_iops = sum(result[0].value[0].value) / len(result[0].value[0].value)
-            print(f"Average write IOPS for the last 60 seconds for {vm_name}: {average_write_iops}")
-            return average_write_iops
-        else:
-            return None
-        
-    def get_average_write_latency(self, vm):
-        try:
-            content = self.__conn__.RetrieveContent()
-        except:
-            self.log.debug("Could not get content from vCenter when trying to get VM stats")
-
-        # Find the virtual machine by name
-        vm_name = str(vm)
-        vm = None
-
-        for obj in content.viewManager.CreateContainerView(content.rootFolder, [vim.VirtualMachine], True).view:
-            if obj.name == vm_name:
-                vm = obj
-                break
-
-        if vm is None:
-            self.log.debug(f"Virtual machine '{vm_name}' not found")
-            return None
-
-        # Get performance manager
-        perf_manager = content.perfManager
-
-        # Define the metric ID for write latency (counterId = X) - replace X with the correct counter ID
-        # You'll need to find the specific counter ID for write latency in your vSphere environment.
-        # The counter for write latency may vary based on your configuration.
-
-        metric_id = vim.PerformanceManager.MetricId(counterId=10, instance="")  # Replace X with the correct counter ID
-
-        end_time = datetime.datetime.now()
-        start_time = end_time - datetime.timedelta(seconds=60)
-
-        # Create a query specification for roll-up data
-        query_spec = vim.PerformanceManager.QuerySpec(
-            entity=vm,
-            metricId=[metric_id],
-            format="normal",
-            startTime=start_time,
-            endTime=end_time,
-            intervalId=20,  # Use an appropriate interval for the roll-up data
-        )
-
-        # Query the performance statistics
-        result = perf_manager.QueryStats(querySpec=[query_spec])
-
-        if result:
-            # Get the average write latency for the last 60 seconds
-            if result[0].value[0].value:
-                average_write_latency = sum(result[0].value[0].value) / len(result[0].value[0].value)
-                self.log.info(f"Average write latency for the last 60 seconds for {vm_name}: {average_write_latency}")
-                return average_write_latency
-
-        return None
-
-    '''
-
-    def disconnect(self):
-        if self._running == False:
-            self.log.debug(f"ZVM disconnect requested, but not currently connected.")
-            return
-        
-        self.terminate()
-        # clear class variables
-        self._running = False
-        self.__connected__ = False
-        self.__auththread__ = None
-        self.token = None
-        self.expiresIn = 0
-        self.token_expire_time = None
-
-        self.site_id = None
-        self.site_name = None
-        self.site_type = None
-        self.site_type_version = None
-
-        self.zvm_version = dict(
-             major=None,
-             minor=None,
-             update=None,
-             patch=None
-        )
-
-        self.api_version = dict(
-            major = None,
-            minor = None,
-            update = None
-        )
-
-        self.log.debug(f"Disconnected from ZVM")
