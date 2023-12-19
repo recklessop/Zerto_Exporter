@@ -18,8 +18,12 @@ from version import VERSION
 from vmware.vcenter import vcsite
 from zvma10.zvma import zvmsite
 from posthog import Posthog
-
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+"""
+Variables: Normally these are imported from the Docker Container, but alternative values can be modified if running the script manually
+"""
+
 callhomestats = os.getenv("CALL_HOME_STATS", 'True').lower() in ('false', '0', 'f')
 verifySSL = os.getenv("VERIFY_SSL", 'False').lower() in ('true', '1', 't')
 zvm_url = os.environ.get('ZVM_HOST', '192.168.50.60')
@@ -34,23 +38,10 @@ vcenter_host = os.environ.get('VCENTER_HOST', '192.168.50.50')
 vcenter_user = os.environ.get('VCENTER_USER', 'administrator@vsphere.local')
 vcenter_pwd = os.environ.get('VCENTER_PASSWORD', 'Zertodata987!')
 
-# Get the hostname of the machine
-container_id = str(socket.gethostname())
 
-#set log line format including container_id
-log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
-
-log_handler = RotatingFileHandler(filename=f"./logs/Log-Main-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
-log_handler.setFormatter(log_formatter)
-
-log = logging.getLogger("Node-Exporter")
-log.setLevel(LOGLEVEL)
-log.addHandler(log_handler)
-log.info(f"Zerto-Node-Exporter - Version {version}")
-log.info(f"Log Level: {LOGLEVEL}")
-log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
-
-# Global Variables
+"""
+Global Variables used by the program
+"""
 token = ""
 siteId = "NotSet"
 siteName = "NotSet"
@@ -62,13 +53,6 @@ siteZvmUpdateVersion = ""
 siteZvmPatchVersion = ""
 lastStats = CaseInsensitiveDict()
 
-# Check if vCenter is set, if not disable VRA metrics
-is_vcenter_set = True
-if vcenter_host == "vcenter.local":
-    log.error("vCenter Host not set. Please set the environment variable VCENTER_HOST, turning off VRA CPU and Memory metrics")
-    is_vcenter_set = False
-log.debug("vCenter data collection is enabled")
-vc_connection = vcsite(vcenter_host, vcenter_user, vcenter_pwd, loglevel="debug")
 
 # Authentication Thread which handles authentication and token refresh for ZVM API
 def ZvmAuthHandler():
@@ -638,7 +622,6 @@ def ThreadProbe():
         log.debug("Probe Thread Going to Sleep")
         sleep(30)
 
-
 #----------------run http server on port 9999-----------------
 def WebServer():
     log.info("Web Server Started")
@@ -656,6 +639,46 @@ def start_thread(target_func):
     thread.start()
     # return the thread object
     return thread
+
+"""
+Main Program Logic
+"""
+
+# Initialize zvmsite instance
+zvm_instance = zvmsite(
+    host=zvm_url, 
+    port=zvm_port, 
+    client_id=client_id, 
+    client_secret=client_secret,
+    grant_type="client_credentials",
+    loglevel=LOGLEVEL
+)
+
+# Start the zvmsite authentication thread
+zvm_instance.connect()
+
+# Get the hostname of the machine
+container_id = str(socket.gethostname())
+
+#set log line format including container_id
+log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
+log_handler = RotatingFileHandler(filename=f"./logs/Log-Main-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
+log_handler.setFormatter(log_formatter)
+log = logging.getLogger("Node-Exporter")
+log.setLevel(LOGLEVEL)
+log.addHandler(log_handler)
+log.info(f"Zerto-Node-Exporter - Version {version}")
+log.info(f"Log Level: {LOGLEVEL}")
+log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host: " + zvm_url + "\nZVM Port: " + zvm_port + "\nClient-Id: " + client_id + "\nClient Secret: " + client_secret)
+
+# Check if vCenter is set, if not disable VRA metrics
+is_vcenter_set = True
+if vcenter_host == "vcenter.local":
+    log.error("vCenter Host not set. Please set the environment variable VCENTER_HOST, turning off VRA CPU and Memory metrics")
+    is_vcenter_set = False
+log.debug("vCenter data collection is enabled")
+vc_connection = vcsite(vcenter_host, vcenter_user, vcenter_pwd, loglevel="debug")
+
 
 # start the threads
 auth_thread = start_thread(ZvmAuthHandler)

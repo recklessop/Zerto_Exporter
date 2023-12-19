@@ -12,6 +12,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 from time import sleep
+from typing import List, Dict, Tuple, Union, Any, Optional
 from requests.structures import CaseInsensitiveDict
 from logging.handlers import RotatingFileHandler
 from posthog import Posthog
@@ -34,7 +35,7 @@ class zvmsite:
             urllib3.disable_warnings(InsecureRequestWarning)
 
         self.client_id = client_id
-        self.client_secret = None
+        self.client_secret = client_secret
         self.grant_type = grant_type
 
         self.__auththread__ = None
@@ -91,12 +92,14 @@ class zvmsite:
 
                     data = {
                         "grant_type": self.grant_type,
-                        "client_id": self.client_id,
-                        "username": self.username,
-                        "password": self.password
+                        "client_id": self.client_id
                     }
                     if self.grant_type == "client_credentials":
                         data["client_secret"] = self.client_secret
+                    else:
+                        data["username"] = self.username
+                        data["password"] = self.password
+
 
                     uri = self.construct_url(path="auth/realms/zerto/protocol/openid-connect/token")
                     response = self.make_api_request("POST", uri, data=data, headers=headers)
@@ -118,7 +121,12 @@ class zvmsite:
             self.log.info("Authentication thread is already running")
             print(f"Auth thread already running")
 
-    def setup_logging(self):
+    def is_authenticated(self) -> bool:
+        # Assuming self.token is the authentication token and it's set upon successful authentication
+        # and self.__connected__ is a boolean indicating the connection status
+        return self.token is not None and self.__connected__
+    
+    def setup_logging(self) -> None:
         container_id = str(socket.gethostname())
         log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
         log_handler = RotatingFileHandler(filename=f"./logs/Log-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
@@ -127,7 +135,7 @@ class zvmsite:
         self.log.setLevel(self.LOGLEVEL)
         self.log.addHandler(log_handler)
 
-    def __redact__(self, data):
+    def __redact__(self, data) -> str:
         sensitive_keys = ["password", "secret", "token"]  # Add any other keys that need redaction
         redacted_data = {}
 
@@ -139,7 +147,7 @@ class zvmsite:
 
         return redacted_data
 
-    def load_or_generate_uuid(self):
+    def load_or_generate_uuid(self) -> uuid.uuid4:
         uuid_path = 'uuid.txt'
         if os.path.exists(uuid_path):
             with open(uuid_path, 'r') as file:
@@ -154,26 +162,26 @@ class zvmsite:
             file.write(new_uuid)
         return new_uuid
 
-    def setup_posthog(self):
+    def setup_posthog(self)  -> None:
         self.posthog = Posthog(project_api_key='phc_HflqUkx9majhzm8DZva8pTwXFRnOn99onA9xPpK5HaQ', host='https://posthog.jpaul.io')
         self.posthog.debug = True
         self.posthog.identify(distinct_id=self.uuid)
 
-    def construct_url(self, path="", params=None):
+    def construct_url(self, path="", params=None) -> str:
         full_url = f"{self.base_url}/{path}"
         if params:
             query_string = urlencode({k: str(v) for k, v in params.items() if v is not None})
             full_url = f"{full_url}?{query_string}"
         return full_url
 
-    def deconstruct_url(self, url):
+    def deconstruct_url(self, url) -> Tuple[str, str]:
         parsed_url = urlparse(url)
         base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
         path = parsed_url.path
 
         return base_url, path
     
-    def make_api_request(self, method, url, data=None, json_data=None, headers=None, timeout=3, test=None):
+    def make_api_request(self, method, url, data=None, json_data=None, headers=None, timeout=3, test=None) -> Optional[Union[Dict[str, Any], str]]:
         try:
             headers = headers or {}
             start_time = time.time()  # Record the start time
@@ -241,7 +249,7 @@ class zvmsite:
                 self.log.error(f"Response content: {e.response.text}")
             return None
 
-    def connect(self):
+    def connect(self) -> None:
         if (self.__auththread__ is None) or (not self.__auththread__.is_alive()):
             self._running = True
             self.__auththread__ = threading.Thread(target=self.__authhandler__, daemon=True)
@@ -250,13 +258,13 @@ class zvmsite:
         else:
             self.log.info("Already connected to the ZVM")
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         self.log.debug("Disconnecting")
         self._running = False
         if self.__auththread__ and self.__auththread__.is_alive():
             self.__auththread__.join(timeout=5) 
      
-    def alert(self, alertidentifier=None):
+    def alert(self, alertidentifier=None) -> Dict[str, Any]:
         
         if alertidentifier is None:
             self.log.error("Alert identifier is required for get_vpg function.")
@@ -268,31 +276,53 @@ class zvmsite:
         uri = self.construct_url(f"v1/alerts/{alertidentifier}", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
           
-    def alert_dismiss(self, alertidentifier=None):
-        
+    def alert_dismiss(self, alertidentifier=None) -> bool:
         if alertidentifier is None:
-            self.log.error("Alert identifier is required for get_vpg function.")
+            self.log.error("Alert identifier is required for alert_dismiss function.")
             raise ValueError("Alert identifier is required.")
 
-        params = {
-        }
-        
+        params = {}
         uri = self.construct_url(f"v1/alerts/{alertidentifier}/dismiss", params)
-        return self.make_api_request("POST", uri, headers=self.apiheader)
-          
-    def alert_undismiss(self, alertidentifier=None):
-        
+
+        try:
+            response = self.make_api_request("POST", uri, headers=self.apiheader)
+            # Check if the response status code is 200 (OK)
+            if response.status_code == 200:
+                return True
+            else:
+                # Log and raise an exception for any non-200 status codes
+                self.log.error(f"Failed to dismiss alert: {response.status_code}")
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            self.log.error(f"Error while sending dismiss alert request: {e}")
+            raise
+
+        return False  # Return False if the try block didn't execute successfully
+
+    def alert_undismiss(self, alertidentifier=None) -> bool:
         if alertidentifier is None:
-            self.log.error("Alert identifier is required for get_vpg function.")
+            self.log.error("Alert identifier is required for alert_undismiss function.")
             raise ValueError("Alert identifier is required.")
 
-        params = {
-        }
-        
+        params = {}
         uri = self.construct_url(f"v1/alerts/{alertidentifier}/undismiss", params)
-        return self.make_api_request("POST", uri, headers=self.apiheader)
-           
-    def alert_levels(self):
+
+        try:
+            response = self.make_api_request("POST", uri, headers=self.apiheader)
+            # Check if the response status code is 200 (OK)
+            if response.status_code == 200:
+                return True
+            else:
+                # Log and raise an exception for any non-200 status codes
+                self.log.error(f"Failed to undismiss alert: {response.status_code}")
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            self.log.error(f"Error while sending undismiss alert request: {e}")
+            raise
+
+        return False  # Return False if the try block didn't execute successfully
+      
+    def alert_levels(self) -> List[str]:
 
         params = {
         }
@@ -300,7 +330,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/alerts/levels", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
            
-    def alert_entities(self):
+    def alert_entities(self) -> List[str]:
 
         params = {
         }
@@ -308,7 +338,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/alerts/entities", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
                  
-    def alert_helpidentifiers(self):
+    def alert_helpidentifiers(self) -> List[str]:
 
         params = {
         }
@@ -317,7 +347,7 @@ class zvmsite:
         return self.make_api_request("GET", uri, headers=self.apiheader)
       
     def alerts(self, startdate=None, enddate=None, vpgid=None, zorgidentifier=None, level=None, 
-             entity=None, helpidentifier=None, isdismissed: bool = None):
+             entity=None, helpidentifier=None, isdismissed: bool = None) -> List[Dict[str, Any]]:
         
         params = {
             'startdate': startdate,
@@ -345,7 +375,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/datastores/{datastoreidentifier}", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
  
-    def datastores(self, datadtoreidentifier=None):
+    def datastores(self, datadtoreidentifier=None) -> List[Dict[str, Any]]:
         
         params = {
         }
@@ -457,7 +487,7 @@ class zvmsite:
         return self.make_api_request("GET", uri, headers=self.apiheader)
       
     def events(self, startdate=None, enddate=None, vpgid=None, sitename=None, zorgidentifier=None, eventtype=None, 
-             entitytype=None, category=None, username=None, alertidentifier=None):
+             entitytype=None, category=None, username=None, alertidentifier=None) -> List[Dict[str, Any]]:
         
         params = {
             'startdate': startdate,
@@ -553,7 +583,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/license", params)
         return self.make_api_request("PUT", uri, json_data=license, headers=self.apiheader)   
   
-    def peer_sites(self):
+    def peer_sites(self) -> List[Dict[str, Any]]:
 
         params = {
         }
@@ -620,10 +650,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/peersites/generatetoken", params)
         return self.make_api_request("POST", uri, headers=self.apiheader)   
 
-
-
-
-    def tasks(self, startedbeforedate=None, startedafterdate=None, completedbeforedate=None, completedafterdate=None, tasktype=None, status=None):
+    def tasks(self, startedbeforedate=None, startedafterdate=None, completedbeforedate=None, completedafterdate=None, tasktype=None, status=None) -> List[Dict[str, Any]]:
         
         params = {
             'startedbeforedate': startedbeforedate,
@@ -670,7 +697,7 @@ class zvmsite:
       
     def vpgs(self, vpgid=None, vpgname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
              recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
-             zorgidentifier=None, priority=None, serviceprofileidentifier=None):
+             zorgidentifier=None, priority=None, serviceprofileidentifier=None) -> List[Dict[str, Any]]:
         
         params = {
             'vpgid': vpgid,
@@ -708,7 +735,7 @@ class zvmsite:
   
     def vms(self, vmidentifier=None, vmname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
              recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
-             zorgname=None, priority=None, includebackupvms: bool = None, includemountedvms: bool = None):
+             zorgname=None, priority=None, includebackupvms: bool = None, includemountedvms: bool = None) -> List[Dict[str, Any]]:
         
         params = {
             'vmidentifier': vmidentifier,
@@ -758,7 +785,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/vms/{vmidentifier}/pointsintime", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
       
-    def volumes(self, volumetype=None, vpgidentifier=None, datastoreidentifier=None, protectedvmidentifier=None, owningvmidentifier=None):
+    def volumes(self, volumetype=None, vpgidentifier=None, datastoreidentifier=None, protectedvmidentifier=None, owningvmidentifier=None) -> List[Dict[str, Any]]:
         if volumetype:
             valid_volumetypes = ["scratch", "journal", "recovery", "protected", "appliance"]
             

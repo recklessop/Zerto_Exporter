@@ -189,7 +189,6 @@ class vcsite:
 
         return None
 
-
     def disconnect(self):
         if self.__conn__ == None:
             self.log.debug(f"vCenter disconnect requested, but not currently connected.")
