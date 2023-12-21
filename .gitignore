@@ -1,6 +1,7 @@
 logs/*
 .env/*
 .DS_Store
+uuid.txt
 app/metrics
 app/metrics.txt
 app/statsmetrics

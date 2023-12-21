@@ -4,10 +4,11 @@ from pyVmomi import vim, vmodl
 import ssl
 import datetime
 import logging
+import socket
 from logging.handlers import RotatingFileHandler
 
 class vcsite:
-    def __init__(self, host, username, password, port=443, verify_ssl=False, loglevel="INFO"):
+    def __init__(self, host, username, password, port=443, verify_ssl=False, loglevel="INFO", logger=None):
         self.host = host
         self.port = port
         self.username = username
@@ -16,21 +17,26 @@ class vcsite:
         self.version = None
         self.__conn__ = None
         self.LOGLEVEL = loglevel.upper()
+        self.log = None
 
-        #set log line format including container_id
-        log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
-        log_handler = RotatingFileHandler(filename=f"./logs/Log-Main-vcenter.log", maxBytes=1024*1024*100, backupCount=5)
-        log_handler.setFormatter(log_formatter)
-        self.log = logging.getLogger("Node-Exporter")
-        self.log.setLevel(self.LOGLEVEL)
-        self.log.addHandler(log_handler)
+        if logger is None:
+            #set log line format including container_id
+            container_id = str(socket.gethostname())
+            log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
+            log_handler = RotatingFileHandler(filename=f"./logs/Log-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
+            log_handler.setFormatter(log_formatter)
+            self.log = logging.getLogger("vCenter Module")
+            self.log.setLevel(self.LOGLEVEL)
+            self.log.addHandler(log_handler)
+        else:
+            self.log = logger
 
     def connect(self):
         self.log.info(f"Log Level set to {self.LOGLEVEL}")
         if self.__conn__ is None:
             context = ssl.create_default_context()
             if not self.verify_ssl:
-                print("dont verify SSL")
+                log.debug("dont verify SSL")
                 # Create an SSL context without certificate verification
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE

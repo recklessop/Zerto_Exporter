@@ -12,6 +12,8 @@ from urllib3.exceptions import InsecureRequestWarning
 from urllib.parse import urlencode
 from urllib.parse import urlparse
 from time import sleep
+from datetime import datetime
+from dateutil import parser
 from typing import List, Dict, Tuple, Union, Any, Optional
 from requests.structures import CaseInsensitiveDict
 from logging.handlers import RotatingFileHandler
@@ -21,7 +23,7 @@ from requests import Request, Session
 from .version import VERSION
 
 class zvmsite:
-    def __init__(self, host, username=None, password=None, port: int = 443, verify_ssl: bool = False, client_id="zerto-client", client_secret=None, grant_type="password", loglevel="debug", stats: bool = True):
+    def __init__(self, host, username=None, password=None, port: int = 443, verify_ssl: bool = False, client_id="zerto-client", client_secret=None, grant_type="password", loglevel="debug", logger=None, stats: bool = True) -> None:
         self.stats = stats
         self.host = host
         self.port = port
@@ -61,7 +63,11 @@ class zvmsite:
         self._running = False
         self.LOGLEVEL = loglevel.upper()
         
-        self.setup_logging()
+        if logger is None:
+            self.setup_logging()
+        else:
+            self.log = logger
+
         atexit.register(self.disconnect)
         self._running = True
 
@@ -74,7 +80,7 @@ class zvmsite:
             self.posthog.capture(self.uuid, 'ZVMA10 Python Module Loaded')
             self.log.debug("Sent PostHog Hook")
 
-    def __authhandler__(self):
+    def __authhandler__(self) -> None:
         self.log.info(f"Log Level set to {self.LOGLEVEL}")
         if not self.__connected__:
             context = ssl.create_default_context()
@@ -110,6 +116,10 @@ class zvmsite:
                         self.expiresIn = int(response['expires_in'])
                         self.log.info("Authentication successful")
                         self.__connected__ = True
+                        local_site_info = self.local_site()
+                        self.site_id = local_site_info['SiteIdentifier']
+                        self.site_name = local_site_info['SiteName']
+                        
                     else:
                         self.log.error("Authentication failed")
                         sleep(2 ** retries)
@@ -131,7 +141,7 @@ class zvmsite:
         log_formatter = logging.Formatter("%(asctime)s;%(levelname)s;%(threadName)s;%(message)s", "%Y-%m-%d %H:%M:%S")
         log_handler = RotatingFileHandler(filename=f"./logs/Log-{container_id}.log", maxBytes=1024*1024*100, backupCount=5)
         log_handler.setFormatter(log_formatter)
-        self.log = logging.getLogger("Node-Exporter")
+        self.log = logging.getLogger("ZVM10 Module")
         self.log.setLevel(self.LOGLEVEL)
         self.log.addHandler(log_handler)
 
@@ -322,6 +332,23 @@ class zvmsite:
 
         return False  # Return False if the try block didn't execute successfully
       
+    def alerts(self, startdate=None, enddate=None, vpgid=None, zorgidentifier=None, level=None, 
+             entity=None, helpidentifier=None, isdismissed: bool = None) -> List[Dict[str, Any]]:
+        
+        params = {
+            'startdate': startdate,
+            'enddate': enddate,
+            'vpgid': vpgid,
+            'zorgidentifier': zorgidentifier,
+            'level': level,
+            'entity': entity,
+            'helpidentifier': helpidentifier,
+            'isdismissed': isdismissed
+        }
+        
+        uri = self.construct_url("v1/alerts", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+        
     def alert_levels(self) -> List[str]:
 
         params = {
@@ -345,25 +372,8 @@ class zvmsite:
         
         uri = self.construct_url(f"v1/alerts/helpidentifiers", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
-      
-    def alerts(self, startdate=None, enddate=None, vpgid=None, zorgidentifier=None, level=None, 
-             entity=None, helpidentifier=None, isdismissed: bool = None) -> List[Dict[str, Any]]:
-        
-        params = {
-            'startdate': startdate,
-            'enddate': enddate,
-            'vpgid': vpgid,
-            'zorgidentifier': zorgidentifier,
-            'level': level,
-            'entity': entity,
-            'helpidentifier': helpidentifier,
-            'isdismissed': isdismissed
-        }
-        
-        uri = self.construct_url("v1/alerts", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-       
-    def datastore(self, datastoreidentifier=None):
+     
+    def datastore(self, datastoreidentifier=None) -> Dict[str, Any]:
         
         if datastoreidentifier is None:
             self.log.error("Datastore identifier is required for get_datastore function.")
@@ -382,6 +392,59 @@ class zvmsite:
         
         uri = self.construct_url("v1/datastores", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def datetime_local(self) -> datetime:
+        params = {}
+        uri = self.construct_url(f"v1/serverDateTime/serverDateTimeLocal", {})
+        response = self.make_api_request("GET", uri, headers=self.apiheader)
+
+        if response is not None:
+            # Extract the datetime string from the JSON response
+            return parser.isoparse(response)
+        else:
+            error_message = "API request failed or returned None"
+            self.log.error(error_message)
+            raise ValueError(error_message)
+    
+    def datetime_utc(self,) -> datetime:
+        params = {}
+        uri = self.construct_url(f"v1/serverDateTime/serverDateTimeUtc", params)
+        response = self.make_api_request("GET", uri, headers=self.apiheader)
+
+        if response is not None:
+            # Extract the datetime string from the JSON response
+            return parser.isoparse(response)
+        else:
+            error_message = "API request failed or returned None"
+            self.log.error(error_message)
+            raise ValueError(error_message)
+    
+    def datetime_check(self, dt_str: str) -> datetime:
+        try:
+            # Try to parse the string into a datetime object
+            dt = parser.isoparse(dt_str)
+        except ValueError:
+            # If parsing fails, raise an error
+            raise ValueError("The 'dt_str' parameter must be a valid datetime string.")
+
+        # Format the datetime object for the API call
+        formatted_datetime = dt.isoformat()
+
+        params = {'datetime': formatted_datetime}
+
+        # Construct the URL with the datetime argument
+        uri = self.construct_url(f"v1/serverDateTime/dateTimeArgument", params)
+
+        # Make the API request
+        response = self.make_api_request("GET", uri, headers=self.apiheader)
+
+        # Check if the response is not None and parse the datetime string
+        if response is not None:
+            return parser.isoparse(response)
+        else:
+            error_message = "API request failed or returned None"
+            self.log.error(error_message)
+            raise requests.exceptions.HTTPError(error_message)
 
     def encryptiondetection_enable(self):
                 
@@ -450,7 +513,7 @@ class zvmsite:
         uri = self.construct_url("v1/encryptionDetection/suspected/vpgs", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
 
-    def event(self, eventidentifier=None):
+    def event(self, eventidentifier=None) -> Dict[str, Any]:
         
         if eventidentifier is None:
             self.log.error("Event identifier is required for get event function.")
@@ -460,30 +523,6 @@ class zvmsite:
         }
         
         uri = self.construct_url(f"v1/events/{eventidentifier}", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-                
-    def event_types(self):
-
-        params = {
-        }
-        
-        uri = self.construct_url(f"v1/events/types", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-           
-    def event_entities(self):
-
-        params = {
-        }
-        
-        uri = self.construct_url(f"v1/events/entities", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-                 
-    def event_categories(self):
-
-        params = {
-        }
-        
-        uri = self.construct_url(f"v1/events/categories", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
       
     def events(self, startdate=None, enddate=None, vpgid=None, sitename=None, zorgidentifier=None, eventtype=None, 
@@ -504,8 +543,74 @@ class zvmsite:
         
         uri = self.construct_url("v1/events", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
+                   
+    def event_types(self) -> List[str]:
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/types", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+           
+    def event_entities(self) -> List[str]:
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/entities", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+                 
+    def event_categories(self) -> List[str]:
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/events/categories", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+                  
+    def license(self) -> Dict[str, Any]:
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/license", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
      
-    def local_site(self):
+    def license_delete(self) -> bool:
+        params = {}
+        uri = self.construct_url(f"v1/license", params)
+
+        try:
+            response = self.make_api_request("DELETE", uri, headers=self.apiheader)
+            # Check if the response status code is 200 (OK)
+            if response.status_code == 200:
+                return True
+            else:
+                # Log and raise an exception for any non-200 status codes
+                self.log.error(f"Failed to delete license: {response.status_code}")
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            self.log.error(f"Error while sending license delete request: {e}")
+            raise
+
+        return False  # Return False if the try block didn't execute successfully
+
+    def license_apply(self, license=None):
+        if license is None:
+            self.log.error("A license key is required for apply license function.")
+            raise ValueError("License key is required.")
+
+        params = {
+        }
+
+        license = {
+            "licenseKey": license
+        }
+
+        uri = self.construct_url(f"v1/license", params)
+        return self.make_api_request("PUT", uri, json_data=license, headers=self.apiheader)
+  
+    def local_site(self) -> Dict[str, Any]:
 
         params = {
         }
@@ -521,15 +626,26 @@ class zvmsite:
         uri = self.construct_url(f"v1/localsite/pairingstatuses", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
      
-    def local_site_send_billing(self):
-
-        params = {
-        }
-        
+    def local_site_send_billing(self) -> bool:
+        params = {}
         uri = self.construct_url(f"v1/localsite/settings/sendusage", params)
-        return self.make_api_request("POST", uri, headers=self.apiheader)
-     
-    def local_site_banner(self):
+
+        try:
+            response = self.make_api_request("POST", uri, headers=self.apiheader)
+            # Check if the response status code is 200 (OK)
+            if response.status_code == 200:
+                return True
+            else:
+                # Log and raise an exception for any non-200 status codes
+                self.log.error(f"Failed to send billing information: {response.status_code}")
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            self.log.error(f"Error while sending billing information request: {e}")
+            raise
+
+        return False  # Return False if the try block didn't execute successfully
+
+    def local_site_banner(self) -> Dict[str, Any]:
 
         params = {
         }
@@ -549,40 +665,7 @@ class zvmsite:
         # uri is spelled incorrectly because it is also spelled incorrectly in zerto
         uri = self.construct_url(f"v1/localsite/settings/logingbanner", params)
         return self.make_api_request("PUT", uri, json_data=data, headers=self.apiheader)
-                  
-    def license(self):
 
-        params = {
-        }
-        
-        uri = self.construct_url(f"v1/license", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-     
-    def license_delete(self):
-
-        params = {
-        }
-        
-        uri = self.construct_url(f"v1/license", params)
-        return self.make_api_request("DELETE", uri, headers=self.apiheader)
-    
-    def license_apply(self, license=None):
-
-        if license is None:
-            self.log.error("A license key is required for apply license function.")
-            raise ValueError("License key is required.")
-
-        params = {
-        }
-
-        license = {
-            "licenseKey": license
-        }
-
-        
-        uri = self.construct_url(f"v1/license", params)
-        return self.make_api_request("PUT", uri, json_data=license, headers=self.apiheader)   
-  
     def peer_sites(self) -> List[Dict[str, Any]]:
 
         params = {
@@ -591,7 +674,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/peersites", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
      
-    def peer_site(self, siteidentifier=None):
+    def peer_site(self, siteidentifier=None) -> Dict[str, Any]:
         if siteidentifier is None:
             self.log.error("Site identifier is required for get site function.")
             raise ValueError("Site identifier is required.")
@@ -602,7 +685,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/peersites/{siteidentifier}", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
           
-    def peer_sites_pairing_statues(self):
+    def peer_sites_pairing_statues(self) -> List[str]:
 
         params = {
         }
@@ -644,12 +727,83 @@ class zvmsite:
         uri = self.construct_url(f"v1/peersites/{siteidentifier}", params)
         return self.make_api_request("DELETE", uri, json=data, headers=self.apiheader)
     
-    def peer_site_pairing_token(self):
+    def peer_site_pairing_token(self) -> Dict[str, Any]:
         params = {}
 
         uri = self.construct_url(f"v1/peersites/generatetoken", params)
         return self.make_api_request("POST", uri, headers=self.apiheader)   
 
+    def recovery_reports(self, starttime=None, endtime=None, pagenumber=None, pagesize=None, vpgname=None, recoverytype=None, state=None) -> List[Dict[str, Any]]:
+        
+        params = {
+            'starttime': starttime,
+            'endtime': endtime,
+            'pagenumber': pagenumber,
+            'pagesize': pagesize,
+            'vpgname': vpgname,
+            'recoverytype': recoverytype,
+            'state': state
+        }
+        
+        uri = self.construct_url("v1/reports/recovery", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def recovery_report(self, recoveryoperationidentifier=None) -> Dict[str, Any]:
+        
+        if recoveryoperationidentifier is None:
+            self.log.error("RecoveryOperationIdentifier is required for function.")
+            raise ValueError("RecoveryOperationIdentifier is required.")
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/reports/recovery/{recoveryoperationidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def resources_report(self, starttime=None, endtime=None, pagenumber=None, pagesize=None, zorgname=None, vpgname=None, vmname=None, 
+                         protectedsitename=None, protectedclustername=None, protectedhostname=None, protectedorgvdc=None, protectedvcdorg=None, recoverysitename=None, 
+                         recoveryclustername=None, recoveryhostname=None, recoveryorgvdc=None, recoveryvcdorg=None) -> List[Dict[str, Any]]:
+        
+        params = {
+            'starttime': starttime,
+            'endtime': endtime,
+            'pagenumber': pagenumber,
+            'pagesize': pagesize,
+            'vpgname': vpgname,
+            'vmname': vmname,
+            'protectedsitename': protectedsitename,
+            'protectedclustername': protectedclustername,
+            'protectedhostname': protectedhostname,
+            'protectedorgvdc': protectedorgvdc,
+            'protectedvcdorg': protectedvcdorg,
+            'recoverysitename': recoverysitename,
+            'recoveryclustername': recoveryclustername,
+            'recoveryhostname': recoveryhostname,
+            'recoveryorgvdc': recoveryorgvdc,
+            'recoveryvcdorg': recoveryvcdorg
+        }
+        
+        uri = self.construct_url("v1/reports/resources", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def service_profiles(self) -> List[Dict[str, Any]]:
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"/v1/serviceprofiles", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
+    def service_profile(self, serviceProfileIdentifier=None) -> Dict[str, Any]:
+        if siteidentifier is None:
+            self.log.error("Service Profile identifier is required for get site function.")
+            raise ValueError("Service Profile identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"/v1/serviceprofiles/{serviceProfileIdentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+     
     def tasks(self, startedbeforedate=None, startedafterdate=None, completedbeforedate=None, completedafterdate=None, tasktype=None, status=None) -> List[Dict[str, Any]]:
         
         params = {
@@ -664,7 +818,7 @@ class zvmsite:
         uri = self.construct_url("v1/tasks", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
      
-    def task(self, taskidentifier=None):
+    def task(self, taskidentifier=None) -> Dict[str, Any]:
         
         if taskidentifier is None:
             self.log.error("Task identifier is required for function.")
@@ -675,7 +829,7 @@ class zvmsite:
         uri = self.construct_url(f"v1/tasks/{taskidentifier}", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
                 
-    def task_types(self):
+    def task_types(self) -> List[str]:
 
         params = {
         }
@@ -683,56 +837,13 @@ class zvmsite:
         uri = self.construct_url(f"v1/tasks/types", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
 
-    def vpg(self, vpgidentifier=None):
+    def vms_statistics(self) -> List[Dict[str, Any]]:
         
-        if vpgidentifier is None:
-            self.log.error("Vpg identifier is required for get_vpg function.")
-            raise ValueError("VM identifier is required.")
-
-        params = {
-        }
+        params = { }
         
-        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}", params)
+        uri = self.construct_url("v1/statistics/vms", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
-      
-    def vpgs(self, vpgid=None, vpgname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
-             recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
-             zorgidentifier=None, priority=None, serviceprofileidentifier=None) -> List[Dict[str, Any]]:
-        
-        params = {
-            'vpgid': vpgid,
-            'vpgname': vpgname,
-            'vpgstatus': vpgstatus,
-            'vpgsubstatus': vpgsubstatus,
-            'protectedsitetype': protectedsitetype,
-            'recoverysitetype': recoverysitetype,
-            'protectedsiteidentifier': protectedsiteidentifier,
-            'recoverysiteidentifier': recoverysiteidentifier,
-            'zorgidentifier': zorgidentifier,
-            'priority': priority,
-            'serviceprofileidentifier': serviceprofileidentifier
-        }
-        
-        uri = self.construct_url("v1/vpgs", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-    
-    def vpg_delete(self, vpgidentifier=None, keeprecoveryvolumes=True, force=True):
-        if vpgidentifier is None:
-            self.log.error("VPG identifier is required for delete_vpg function.")
-            raise ValueError("VPG identifier is required.")
-
-        # URL with vpgidentifier in the path
-        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}")
-
-        # Data to be sent in the request body
-        data = {
-            "keepRecoveryVolumes": keeprecoveryvolumes,
-            "force": force
-        }
-
-        # Make the POST request
-        return self.make_api_request("POST", uri, data=data, headers=self.apiheader)
-  
+ 
     def vms(self, vmidentifier=None, vmname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
              recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
              zorgname=None, priority=None, includebackupvms: bool = None, includemountedvms: bool = None) -> List[Dict[str, Any]]:
@@ -773,8 +884,8 @@ class zvmsite:
     def vm_pointintime(self, vmidentifier=None, vpgidentifier=None, includebackupvms: bool = None, includemountedvms: bool = None):
         
         if vmidentifier is None:
-            self.log.error("VM identifier is required for get_vm function.")
-            raise ValueError("VM identifier is required.")
+            self.log.error("VM identifier is required for vm_pointintime function.")
+            raise ValueError("VM identifier is required for vm_pointintime.")
 
         params = {
             'vpgidentifier': vpgidentifier,
@@ -783,8 +894,36 @@ class zvmsite:
         }
         
         uri = self.construct_url(f"v1/vms/{vmidentifier}/pointsintime", params)
-        return self.make_api_request("GET", uri, headers=self.apiheader)
-      
+        stats = self.make_api_request("GET", uri, headers=self.apiheader)   
+
+        if isinstance(stats, list) and not stats:
+            self.log.error("No points in time found for the specified VM. Or the VM is in Multiple VPGs, try specifing vpgidentifier.")
+            raise ValueError("No points in time found for the specified VM. Or the VM is in Multiple VPGs, try specifing vpgidentifier.")
+        elif stats is None:
+            self.log.error("VM not found, or vpgidentifier must be specified")
+            raise ValueError("VM not found, or vpgidentifier must be specified")
+        else:
+            return stats
+
+    def vm_pointintime_stats(self, vmidentifier=None, vpgidentifier=None):
+        
+        if vmidentifier is None:
+            self.log.error("VM identifier is required for get_vm function.")
+            raise ValueError("VM identifier is required.")
+
+        params = {
+            'vpgidentifier': vpgidentifier
+        }
+        
+        uri = self.construct_url(f"v1/vms/{vmidentifier}/pointsInTime/stats", params)
+        stats = self.make_api_request("GET", uri, headers=self.apiheader)   
+
+        if stats is None:
+            self.log.error("VM not found, or vpgidentifier must be specified")
+            raise ValueError("VM not found, or vpgidentifier must be specified")
+        else:
+            return stats
+
     def volumes(self, volumetype=None, vpgidentifier=None, datastoreidentifier=None, protectedvmidentifier=None, owningvmidentifier=None) -> List[Dict[str, Any]]:
         if volumetype:
             valid_volumetypes = ["scratch", "journal", "recovery", "protected", "appliance"]
@@ -805,8 +944,238 @@ class zvmsite:
         
         uri = self.construct_url("v1/volumes", params)
         return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg(self, vpgidentifier=None) -> Dict[str, Any]:
+        
+        if vpgidentifier is None:
+            self.log.error("Vpg identifier is required for get_vpg function.")
+            raise ValueError("VM identifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg_checkpoints(self, vpgidentifier=None) -> Dict[str, Any]:
+        
+        if vpgidentifier is None:
+            self.log.error("Vpg identifier is required for vpg_checkpoints function.")
+            raise ValueError("vpgidentifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}/checkpoints", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg_take_checkpoint(self, vpgidentifier=None, checkpointname=None) -> Dict[str, Any]:
+        
+        if vpgidentifier is None:
+            self.log.error("Vpg identifier is required for vpg_checkpoints function.")
+            raise ValueError("vpgidentifier is required.")
+        
+        # Construct the JSON payload
+        json_payload = {"checkpointname": "Checkpoint By Python ZVM Module"}
+        if checkpointname is not None:
+            json_payload["checkpointname"] = checkpointname
+
+        params = { }
+        
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}/checkpoints", params)
+        return self.make_api_request("POST", uri, json_data=json_payload, headers=self.apiheader)
+
+    def vpg_checkpoint_stats(self, vpgidentifier=None) -> Dict[str, Any]:
+        
+        if vpgidentifier is None:
+            self.log.error("Vpg identifier is required for vpg_checkpoints function.")
+            raise ValueError("vpgidentifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}/checkpoints/stats", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+         
+    def vpgs(self, vpgid=None, vpgname=None, vpgstatus=None, vpgsubstatus=None, protectedsitetype=None, 
+             recoverysitetype=None, protectedsiteidentifier=None, recoverysiteidentifier=None, 
+             zorgidentifier=None, priority=None, serviceprofileidentifier=None) -> List[Dict[str, Any]]:
+        
+        params = {
+            'vpgid': vpgid,
+            'vpgname': vpgname,
+            'vpgstatus': vpgstatus,
+            'vpgsubstatus': vpgsubstatus,
+            'protectedsitetype': protectedsitetype,
+            'recoverysitetype': recoverysitetype,
+            'protectedsiteidentifier': protectedsiteidentifier,
+            'recoverysiteidentifier': recoverysiteidentifier,
+            'zorgidentifier': zorgidentifier,
+            'priority': priority,
+            'serviceprofileidentifier': serviceprofileidentifier
+        }
+        
+        uri = self.construct_url("v1/vpgs", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
     
-    def __set_zvm_version__(self):
+    def vpg_delete(self, vpgidentifier=None, keeprecoveryvolumes=True, force=True):
+        if vpgidentifier is None:
+            self.log.error("VPG identifier is required for delete_vpg function.")
+            raise ValueError("VPG identifier is required.")
+
+        # URL with vpgidentifier in the path
+        uri = self.construct_url(f"v1/vpgs/{vpgidentifier}")
+
+        # Data to be sent in the request body
+        data = {
+            "keepRecoveryVolumes": keeprecoveryvolumes,
+            "force": force
+        }
+
+        # Make the POST request
+        return self.make_api_request("POST", uri, data=data, headers=self.apiheader)
+
+    def vpg_retention_policies(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/retentionpolicies", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg_priorities(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/priorities", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+ 
+    def vpg_entity_types(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/entitytypes", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg_statuses(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/statuses", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+ 
+    def vpg_substatuses(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/substatuses", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg_failover_shutdown_policies(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/failovershutdownpolicies", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vpg_failover_commit_policies(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vpgs/failovercommitpolicies", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vras(self, vraname=None, status=None, vraversion=None, hostname=None, ipaddress=None, 
+             vragroup=None, datastorename=None, datastoreclustername=None, networkname=None, vraipconfigurationapi=None) -> List[Dict[str, Any]]:
+        
+        params = {
+            'vraname': vraname,
+            'status': status,
+            'vraversion': vraversion, 
+            'hostname': hostname,
+            'ipaddress': ipaddress, 
+            'vragroup': vragroup,
+            'datastorename': datastorename,
+            'datastoreclustername': datastoreclustername,
+            'networkname': networkname,
+            'vraipconfigurationapi': vraipconfigurationapi
+        }
+        
+        uri = self.construct_url(f"v1/vras", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vra(self, vraidentifier=None) -> Dict[str, Any]:
+         
+        if vraidentifier is None:
+            self.log.error("vraidentifier is required for vra function.")
+            raise ValueError("vraidentifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vras/{vraidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vra_upgrade(self, vraidentifier=None) -> Dict[str, Any]:
+         
+        if vraidentifier is None:
+            self.log.error("vraidentifier is required for vra function.")
+            raise ValueError("vraidentifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vras/{vraidentifier}/upgrade", params)
+        return self.make_api_request("POST", uri, headers=self.apiheader)
+
+    def vra_statuses(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vras/statuses", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def vra_ipconfigurationtypes(self) -> List[str]:
+
+        params = {}
+        
+        uri = self.construct_url(f"v1/vras/ipconfigurationtypes", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    """
+    def vra_cluster_settings(self, clusteridentifier=None) -> Dict[str, Any]:
+         
+        if clusteridentifier is None:
+            self.log.error("clusteridentifier is required for vra function.")
+            raise ValueError("clusteridentifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/vras/clusters/{clusteridentifier}/settings", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+    """
+
+    def zorgs(self) -> Dict[str, Any]:
+    
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/zorgs", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def zorg(self, zorgidentifier=None) -> Dict[str, Any]:
+             
+        if zorgidentifier is None:
+            self.log.error("zorgidentifier is required for function.")
+            raise ValueError("zorgidentifier is required.")
+
+        params = {
+        }
+        
+        uri = self.construct_url(f"v1/zorgs/{zorgidentifier}", params)
+        return self.make_api_request("GET", uri, headers=self.apiheader)
+
+    def __set_zvm_version__(self) -> None:
         uri = self.construct_url("v1/localsite")
         response = self.make_api_request("GET", uri, headers=self.apiheader)
         if response:
@@ -824,7 +1193,7 @@ class zvmsite:
                 self.zvm_version['patch'] = temp[1] if len(temp) > 1 else "0"
             self.log.info(f"Site ID: {self.site_id}, Site Name: {self.site_name}, Site Type: {self.site_type}")
 
-    def version(self):
+    def version(self) -> Dict[str, Any]:
         if self.__connected__ and self._running:
             if self.zvm_version['full'] is None:
                 self.__set_zvm_version__()
