@@ -139,6 +139,7 @@ def GetStatsFunc(zvm_instance):
                         metricsDictionary["vm_UnencryptedDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentUnencryptedLBs
                         metricsDictionary["vm_TotalDataInLBs{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentTotalLBs
                         metricsDictionary["vm_PercentEncrypted{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentPercentEncrypted
+                        metricsDictionary["vm_TrendChangeLevel{VpgIdentifier=\"" + vm['VpgIdentifier'] + "\",VmIdentifier=\"" + vm['VmIdentifier'] + "\",VmName=\"" + str(vm['VmName']) + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = CurrentTrendChangeLevel
                     else:
                         log.debug(f"VM is only recovering to this site, skipping metrics - {vm['VmIdentifier']}")
                         #print(f"VM is only recovering to this site, skipping metrics - {vm['VmIdentifier']}")
