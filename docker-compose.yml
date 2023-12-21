@@ -3,7 +3,6 @@ version: "3.3"
 services:
   zerto-exporter:
     build: .
-    command: python python-node-exporter.py
     ports:
       - "9999:9999"
     environment:
@@ -17,4 +16,4 @@ services:
       - VCENTER_USER=administrator@vsphere.local
       - VCENTER_PASSWORD=Zertodata987!
     volumes:
-      - "./app:/usr/src/app:rw"
+      - "./logs:/usr/src/app/logs/"
