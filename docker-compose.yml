@@ -1,7 +1,7 @@
 version: "3.3"
    
 services:
-  custom-exporter-in-python:
+  zerto-exporter:
     build: .
     command: python python-node-exporter.py
     ports:
@@ -11,10 +11,10 @@ services:
       - ZVM_HOST=192.168.50.60
       - ZVM_PORT=443
       - CLIENT_ID=api-script
-      - CLIENT_SECRET=js51tDM8oappYUGRJBhF7bcsedNoHA5j
+      - CLIENT_SECRET=fcYMFuA5TkIUwp6b3hDUxim0f32z8erk
       - LOGLEVEL=INFO #Valid settings are CRITICAL, ERROR, WARNING, INFO, DEBUG
       - VCENTER_HOST=192.168.50.50
       - VCENTER_USER=administrator@vsphere.local
-      - VCENTER_PASSWORD=password
+      - VCENTER_PASSWORD=Zertodata987!
     volumes:
       - "./app:/usr/src/app:rw"
