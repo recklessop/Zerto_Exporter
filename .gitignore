@@ -1,6 +1,7 @@
 logs/*
 .env/*
 .DS_Store
+uuid.txt
 app/metrics
 app/metrics.txt
 app/statsmetrics
@@ -10,4 +11,8 @@ app/threads.txt
 app/vrametrics
 app/vrametrics.txt
 app/__pycache__/*
+app/microsoft.gpg
 app/logs/*
+app/zvma10/__pycache__/*
+app/zvma9_7/__pycache__/*
+app/temp.sh
