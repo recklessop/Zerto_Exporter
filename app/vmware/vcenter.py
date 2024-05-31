@@ -36,7 +36,7 @@ class vcsite:
         if self.__conn__ is None:
             context = ssl.create_default_context()
             if not self.verify_ssl:
-                log.debug("dont verify SSL")
+                self.log.debug("dont verify SSL")
                 # Create an SSL context without certificate verification
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
@@ -90,7 +90,7 @@ class vcsite:
                 else:
                     self.log.debug(f"{vm_obj.name} is not a VRA")
             raise ValueError("No VRA Found")
-            
+
     def get_write_iops(self, vm):
         try:
             content = self.__conn__.RetrieveContent()
@@ -141,7 +141,7 @@ class vcsite:
             return average_write_iops
         else:
             return None
-        
+
     def get_average_write_latency(self, vm):
         try:
             content = self.__conn__.RetrieveContent()

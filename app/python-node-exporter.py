@@ -13,7 +13,7 @@ from time import sleep, time
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.structures import CaseInsensitiveDict
 from tinydb import TinyDB, Query
-from tinydbstorage.storage import MemoryStorage
+from tinydb.storages import MemoryStorage
 from version import VERSION
 from vmware.vcenter import vcsite
 from zvma10.zvma import zvmsite
@@ -27,11 +27,14 @@ start_time = time()
 Variables: Normally these are imported from the Docker Container, but alternative values can be modified if running the script manually
 """
 
+listen_port = int(os.getenv('LISTEN_PORT', 9999))
 callhomestats = os.getenv("CALL_HOME_STATS", 'True').lower() in ('false', '0', 'f')
 verifySSL = os.getenv("VERIFY_SSL", 'False').lower() in ('true', '1', 't')
 zvm_url = os.environ.get('ZVM_HOST', '192.168.50.60')
 zvm_port = os.environ.get('ZVM_PORT', '443')
-client_id = os.environ.get('CLIENT_ID', 'api-script')
+zvm_username = os.environ.get('ZVM_USERNAME', 'admin')
+zvm_password = os.environ.get('ZVM_PASSWORD', 'Zertodata987!')
+client_id = os.environ.get('CLIENT_ID', 'zerto-client')
 client_secret = os.environ.get('CLIENT_SECRET', 'fcYMFuA5TkIUwp6b3hDUxim0f32z8erk')
 scrape_speed = int(os.environ.get('SCRAPE_SPEED', 30))
 api_timeout = int(os.environ.get('API_TIMEOUT', 5))
@@ -45,9 +48,11 @@ vcenter_pwd = os.environ.get('VCENTER_PASSWORD', 'Zertodata987!')
 # Thread which gets VM level encryption statistics from ZVM API
 
 def GetStatsFunc(zvm_instance):
-    tempdb = TinyDB(storage=MemoryStorage) # ('./db.json')   used for storing db on disk for debugging
+    tempdb = TinyDB(storage=MemoryStorage) # ('./db.json') #(storage=MemoryStorage)   used for storing db on disk for debugging 
     dbvm = Query()
     dbvpg = Query()
+    dbsite = Query()
+
     zvm = zvm_instance
     while (True) :
         global siteId
@@ -70,9 +75,11 @@ def GetStatsFunc(zvm_instance):
                     if vmsiteinfo['ProtectedSite']['identifier'] == zvm.site_id:
                         log.debug(f"VM is protected at this site - {vm['VmIdentifier']}")
                         oldvmdata = dict()
+                        # this part of the dictionary will never exist, so not sure why i need this as i set the key/values below in the vmem section.
                         if 'EncryptionMetrics' not in vm:
                             vm['EncryptionMetrics'] = {}
                         vm['VmName'] = None
+                        vm['SiteId'] = zvm.site_id
 
                         CurrentIops                       = 0
                         CurrentWriteCounterInMBs          = 0
@@ -95,12 +102,14 @@ def GetStatsFunc(zvm_instance):
                                 vm['VmName'] = vmem['Link']['name']
 
                         log.info("Checking TempDB for VM " + vm['VmIdentifier'] + " in VPG " + vm['VpgIdentifier'])
-                        oldvmdata = tempdb.search(dbvm.VmIdentifier == vm['VmIdentifier'] and dbvpg.VpgIdentifier == vm['VpgIdentifier'])
+                        oldvmdata = tempdb.search((dbvm.VmIdentifier == vm['VmIdentifier']) & (dbvpg.VpgIdentifier == vm['VpgIdentifier']))
                         if (oldvmdata):
                             log.info(vm['VmIdentifier'] + " Record Found, Updating DB")
-                            log.debug(oldvmdata[0])
-                            log.debug(tempdb.update(vm, dbvm.VmIdentifier == vm['VmIdentifier'] and dbvpg.VpgIdentifier == vm['VpgIdentifier']))
-
+                            log.debug("Old Data")
+                            log.debug(oldvmdata)
+                            log.debug(tempdb.update(vm, (dbvm.VmIdentifier == vm['VmIdentifier']) & (dbvpg.VpgIdentifier == vm['VpgIdentifier'])))
+                            log.debug("New Data")
+                            log.debug(vm)
                             log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                             VMName                            = oldvmdata[0]['VmName']
                             log.debug("Current VM " + str(VMName))
@@ -197,8 +206,12 @@ def GetDataFunc(zvm_instance):
                     metricsDictionary["vpg_configured_rpo_seconds{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["ConfiguredRpoSeconds"]
                     metricsDictionary["vpg_actual_history_in_minutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["HistoryStatusApi"]["ActualHistoryInMinutes"]
                     metricsDictionary["vpg_configured_history_in_minutes{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["HistoryStatusApi"]["ConfiguredHistoryInMinutes"]
-                    metricsDictionary["vpg_failsafe_history_in_minutes_actual{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["FailSafeHistory"]["ActualFailSafeHistory"]
-                    metricsDictionary["vpg_failsafe_history_in_minutes_configured{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["FailSafeHistory"]["ConfiguredFailSafeHistory"]
+                    if(vpg["FailSafeHistory"] is None):
+                        metricsDictionary["vpg_failsafe_history_in_minutes_actual{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = 0
+                        metricsDictionary["vpg_failsafe_history_in_minutes_configured{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = 0
+                    else:
+                        metricsDictionary["vpg_failsafe_history_in_minutes_actual{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["FailSafeHistory"]["ActualFailSafeHistory"]
+                        metricsDictionary["vpg_failsafe_history_in_minutes_configured{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["FailSafeHistory"]["ConfiguredFailSafeHistory"]
                     metricsDictionary["vpg_status{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["Status"]
                     metricsDictionary["vpg_substatus{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["SubStatus"]
                     metricsDictionary["vpg_alert_status{VpgIdentifier=\"" + vpg['VpgIdentifier'] + "\",VpgName=\"" + vpg['VpgName'] + "\",VpgPriority=\"" + str(vpg['Priority'])  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = vpg["AlertStatus"]
@@ -387,9 +400,10 @@ def GetVraMetrics(zvm_instance):
                         if is_vcenter_set:
                             log.debug(f"vCenter Info Is Valid... Trying to get CPU and Memory usage for VRAs")
                             try:
-                                log.debug("Trying to get stats from vc module")
+                                log.debug("Trying to get stats from vCenter module")
                                 vradata = vc_connection.get_cpu_mem_used(vra['VraName'])
-                            
+                                for item in vradata:
+                                    log.debug(item)
                                 # get the CPU usage and memory usage for the VM
                                 cpu_usage_mhz = vradata[0]
                                 memory_usage_mb = vradata[1]
@@ -399,7 +413,7 @@ def GetVraMetrics(zvm_instance):
                                 metricsDictionary["vra_cpu_usage_mhz{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = cpu_usage_mhz
                                 metricsDictionary["vra_memory_usage_mb{VraIdentifierStr=\"" + vra['VraIdentifierStr'] + "\",VraName=\"" + vra['VraName'] + "\",VraVersion=\"" + vra['VraVersion'] + "\",HostVersion=\"" + vra['HostVersion']  + "\",SiteIdentifier=\"" + siteId + "\",SiteName=\"" + siteName + "\"}"] = memory_usage_mb
                             except:
-                                log.info(f"No VM found with name {vra['VraName']}")
+                                log.info(f"No VM found with name {vra['VraName']}, or unexpected response.")
                 else:
                     log.debug("No VRAs Found")
                 
@@ -458,7 +472,7 @@ def ThreadProbe():
             log.debug("VRA Metrics Thread Is NOT Alive")
             metricsDictionary["exporter_thread_status{thread=\"" + "VraMetrics"  + "\",ExporterInstance=\"" + container_id + "\"}"] = 0
 
-        log.debug("Writing Probe data to files")
+        log.debug("Writing Thread data to files")
         file_object = open('threads', 'w')
         txt_object = open('threads.txt', 'w')
         for item in metricsDictionary :
@@ -471,22 +485,21 @@ def ThreadProbe():
             txt_object.write(str(metricsDictionary[item]))
             txt_object.write("\n")
 
-        log.debug("Trying to Close probe txt files")
+        log.debug("Trying to close Thread txt files")
         file_object.close()
         txt_object.close()
 
         log.debug("Probe Thread Going to Sleep")
         sleep(30)
 
-#----------------run http server on port 9999-----------------
-def WebServer():
-    log.info("Web Server Started")
-    PORT = 9999
+#----------------run http server on port -----------------
+def WebServer(port):
+    log.info(f"Web Server Starting on port {port}")
 
     Handler = http.server.SimpleHTTPRequestHandler
 
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        log.info(f"Webserver running on port {PORT}")
+    with socketserver.TCPServer(("", port), Handler) as httpd:
+        log.info(f"Webserver running on port {port}")
         httpd.serve_forever()
 
 def start_thread(target_func):
@@ -519,16 +532,18 @@ log.debug("Running with Variables:\nVerify SSL: " + str(verifySSL) + "\nZVM Host
 zvm_instance = zvmsite(
     host=zvm_url, 
     port=zvm_port, 
+    username=zvm_username,
+    password=zvm_password,
     client_id=client_id, 
     client_secret=client_secret,
-    grant_type="client_credentials",
     loglevel=LOGLEVEL,
     logger=log,
     stats=DISABLE_STATS
 )
+#     grant_type="client_credentials",
 # Start the zvmsite authentication thread
-zvm_instance.connect()
 
+zvm_instance.connect()
 """
 Global Variables used by the program
 """
@@ -558,9 +573,9 @@ vra_metrics_thread = start_thread(lambda: GetVraMetrics(zvm_instance))
 data_thread = start_thread(lambda: GetDataFunc(zvm_instance))
 stats_thread = start_thread(lambda: GetStatsFunc(zvm_instance))
 log.debug("Starting VRA Metrics")
-
-webserver_thread = start_thread(WebServer)
-probe_thread = start_thread(ThreadProbe)
+webserver_thread = start_thread(lambda: WebServer(listen_port))
+probe_thread = start_thread(lambda: ThreadProbe)
+log.debug(f"ThreadProbe just started on PID {probe_thread}")
 
 # loop indefinitely
 while True:
@@ -570,20 +585,30 @@ while True:
         # restart the thread
         log.error("Probe Thread Died - Restarting")
         probe_thread = start_thread(ThreadProbe)
+    else:
+        print("Probe Thread is alive")
     if not data_thread.is_alive():
         # restart the thread
         log.error("Data Thread Died - Restarting")
         data_thread = start_thread(GetDataFunc(zvm_instance))
+    else:
+        print("Data API  Thread is alive")
     if not stats_thread.is_alive():
         # restart the thread
         log.error("Stats Thread Died - Restarting")
         stats_thread = start_thread(lambda: GetStatsFunc(zvm_instance))
+    else:
+        print("Stats API Thread is alive")
     if not vra_metrics_thread.is_alive():
         # restart the thread
         log.error("VRA Metrics Thread Died - Restarting")
         vra_metrics_thread = start_thread(GetVraMetrics(zvm_instance))
+    else:
+        print("VRA Metrics Thread is alive")
     if not webserver_thread.is_alive():
         # restart the thread
         log.error("Webserver Thread Died - Restarting")
-        webserver_thread = start_thread(WebServer)
+        webserver_thread = start_thread(WebServer(listen_port))
+    else:
+        print("WebServer Thread is alive")
     sleep(api_timeout)

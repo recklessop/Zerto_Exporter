@@ -17,7 +17,7 @@ from dateutil import parser
 from typing import List, Dict, Tuple, Union, Any, Optional
 from requests.structures import CaseInsensitiveDict
 from logging.handlers import RotatingFileHandler
-from posthog import Posthog
+#from posthog import Posthog
 import uuid
 from requests import Request, Session
 from .version import VERSION
@@ -75,10 +75,10 @@ class zvmsite:
         self.uuid = self.load_or_generate_uuid()
 
         # Posthog stats setup
-        if self.stats:
-            self.setup_posthog()
-            self.posthog.capture(self.uuid, 'ZVMA10 Python Module Loaded')
-            self.log.debug("Sent PostHog Hook")
+        #if self.stats:
+        #    self.setup_posthog()
+        #    self.posthog.capture(self.uuid, 'ZVMA10 Python Module Loaded')
+        #    self.log.debug("Sent PostHog Hook")
 
     def __authhandler__(self) -> None:
         self.log.info(f"Log Level set to {self.LOGLEVEL}")
@@ -172,10 +172,10 @@ class zvmsite:
             file.write(new_uuid)
         return new_uuid
 
-    def setup_posthog(self)  -> None:
-        self.posthog = Posthog(project_api_key='phc_HflqUkx9majhzm8DZva8pTwXFRnOn99onA9xPpK5HaQ', host='https://posthog.jpaul.io')
-        self.posthog.debug = True
-        self.posthog.identify(distinct_id=self.uuid)
+    #def setup_posthog(self)  -> None:
+    #    self.posthog = Posthog(project_api_key='phc_HflqUkx9majhzm8DZva8pTwXFRnOn99onA9xPpK5HaQ', host='https://posthog.jpaul.io')
+    #    self.posthog.debug = True
+    #    self.posthog.identify(distinct_id=self.uuid)
 
     def construct_url(self, path="", params=None) -> str:
         full_url = f"{self.base_url}/{path}"
@@ -236,21 +236,21 @@ class zvmsite:
             self.log.debug(f'API Request: {method} - {url}')
 
             # Posthog stats setup
-            if self.stats:
-                temp_base, temp_path = self.deconstruct_url(url)
-                self.posthog.capture( self.uuid, 'API REQUEST',
-                {
-                    "url": temp_base,
-                    "port": self.port,
-                    "endpoint": temp_path,
-                    "method": method,
-                    "response_time_ms": int(elapsed_time_ms),
-                    "verify_ssl": self.verify_ssl, 
-                    "grant_type": self.grant_type,
-                    "status_code": str(response.status_code),
-                    "sdk_version": self.__version__
-                })
-                self.log.debug("Sent PostHog Hook")
+            #if self.stats:
+            #    temp_base, temp_path = self.deconstruct_url(url)
+            #    self.posthog.capture( self.uuid, 'API REQUEST',
+            #    {
+            #        "url": temp_base,
+            #        "port": self.port,
+            #        "endpoint": temp_path,
+            #        "method": method,
+            #        "response_time_ms": int(elapsed_time_ms),
+            #        "verify_ssl": self.verify_ssl, 
+            #        "grant_type": self.grant_type,
+            #        "status_code": str(response.status_code),
+            #        "sdk_version": self.__version__
+            #    })
+            #    self.log.debug("Sent PostHog Hook")
 
             return response.json()
         except requests.exceptions.RequestException as e:
