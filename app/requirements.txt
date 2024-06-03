@@ -1,4 +1,4 @@
-annotated-types==0.6.0
+annotated-types==0.7.0
 async-timeout==4.0.3
 backoff==2.2.1
 boto3==1.28.63
