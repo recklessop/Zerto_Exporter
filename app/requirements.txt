@@ -4,7 +4,7 @@ backoff==2.2.1
 boto3==1.28.63
 botocore==1.31.63
 cachetools==5.3.1
-certifi==2023.7.22
+certifi==2024.7.4
 charset-normalizer==3.3.0
 docopt==0.6.2
 idna==3.4
