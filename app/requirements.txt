@@ -7,7 +7,7 @@ cachetools==5.3.1
 certifi==2023.7.22
 charset-normalizer==3.3.0
 docopt==0.6.2
-idna==3.4
+idna==3.8
 jmespath==1.0.1
 monotonic==1.6
 posthog==3.0.2
