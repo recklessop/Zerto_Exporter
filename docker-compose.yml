@@ -1,5 +1,3 @@
-version: "3.3"
-   
 services:
   zerto-exporter:
     build: .
@@ -7,13 +5,13 @@ services:
       - "9999:9999"
     environment:
       - VERIFY_SSL=False
-      - ZVM_HOST=192.168.50.60
+      - ZVM_HOST=192.168.50.30
       - ZVM_PORT=443
-      - CLIENT_ID=api-script
-      - CLIENT_SECRET=fcYMFuA5TkIUwp6b3hDUxim0f32z8erk
+      #- CLIENT_ID=api-script
+      #- CLIENT_SECRET=fcYMFuA5TkIUwp6b3hDUxim0f32z8erk
+      - ZVM_USERNAME=admin
+      - ZVM_PASSWORD=Zertodata987!
       - LOGLEVEL=INFO #Valid settings are CRITICAL, ERROR, WARNING, INFO, DEBUG
-      - VCENTER_HOST=192.168.50.50
+      - VCENTER_HOST=192.168.50.20
       - VCENTER_USER=administrator@vsphere.local
       - VCENTER_PASSWORD=Zertodata987!
-    volumes:
-      - "./logs:/usr/src/app/logs/"

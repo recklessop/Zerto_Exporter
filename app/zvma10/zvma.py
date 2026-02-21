@@ -17,7 +17,6 @@ from dateutil import parser
 from typing import List, Dict, Tuple, Union, Any, Optional
 from requests.structures import CaseInsensitiveDict
 from logging.handlers import RotatingFileHandler
-#from posthog import Posthog
 import uuid
 from requests import Request, Session
 from .version import VERSION
@@ -74,12 +73,6 @@ class zvmsite:
         # Get UUID
         self.uuid = self.load_or_generate_uuid()
 
-        # Posthog stats setup
-        #if self.stats:
-        #    self.setup_posthog()
-        #    self.posthog.capture(self.uuid, 'ZVMA10 Python Module Loaded')
-        #    self.log.debug("Sent PostHog Hook")
-
     def __authhandler__(self) -> None:
         self.log.info(f"Log Level set to {self.LOGLEVEL}")
         if not self.__connected__:
@@ -102,9 +95,11 @@ class zvmsite:
                     }
                     if self.grant_type == "client_credentials":
                         data["client_secret"] = self.client_secret
+                        data["scope"] = "openid"
                     else:
                         data["username"] = self.username
                         data["password"] = self.password
+                        data["scope"] = "openid"
 
 
                     uri = self.construct_url(path="auth/realms/zerto/protocol/openid-connect/token")
@@ -129,7 +124,6 @@ class zvmsite:
                     self.expiresIn -= 10
         else:
             self.log.info("Authentication thread is already running")
-            print(f"Auth thread already running")
 
     def is_authenticated(self) -> bool:
         # Assuming self.token is the authentication token and it's set upon successful authentication
@@ -171,11 +165,6 @@ class zvmsite:
         with open(uuid_path, 'w') as file:
             file.write(new_uuid)
         return new_uuid
-
-    #def setup_posthog(self)  -> None:
-    #    self.posthog = Posthog(project_api_key='phc_HflqUkx9majhzm8DZva8pTwXFRnOn99onA9xPpK5HaQ', host='https://posthog.jpaul.io')
-    #    self.posthog.debug = True
-    #    self.posthog.identify(distinct_id=self.uuid)
 
     def construct_url(self, path="", params=None) -> str:
         full_url = f"{self.base_url}/{path}"
@@ -234,23 +223,6 @@ class zvmsite:
             elapsed_time_ms = (end_time - start_time) * 1000
             response.raise_for_status()
             self.log.debug(f'API Request: {method} - {url}')
-
-            # Posthog stats setup
-            #if self.stats:
-            #    temp_base, temp_path = self.deconstruct_url(url)
-            #    self.posthog.capture( self.uuid, 'API REQUEST',
-            #    {
-            #        "url": temp_base,
-            #        "port": self.port,
-            #        "endpoint": temp_path,
-            #        "method": method,
-            #        "response_time_ms": int(elapsed_time_ms),
-            #        "verify_ssl": self.verify_ssl, 
-            #        "grant_type": self.grant_type,
-            #        "status_code": str(response.status_code),
-            #        "sdk_version": self.__version__
-            #    })
-            #    self.log.debug("Sent PostHog Hook")
 
             return response.json()
         except requests.exceptions.RequestException as e:
@@ -794,7 +766,7 @@ class zvmsite:
         return self.make_api_request("GET", uri, headers=self.apiheader)
      
     def service_profile(self, serviceProfileIdentifier=None) -> Dict[str, Any]:
-        if siteidentifier is None:
+        if serviceProfileIdentifier is None:
             self.log.error("Service Profile identifier is required for get site function.")
             raise ValueError("Service Profile identifier is required.")
 
