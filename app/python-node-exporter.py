@@ -136,6 +136,16 @@ g_thread_status   = Gauge('exporter_thread_status', 'Exporter Thread Status',   
 # ---------------------------------------------------------------------------
 # Thread which gets VM level encryption statistics from ZVM API
 # ---------------------------------------------------------------------------
+def _counter_delta(new, old, vm_id, metric):
+    """Return new-old normally; if new < old, the ZVM counter reset (reboot).
+    In that case return new as-is and log a warning so the spike is suppressed."""
+    if new >= old:
+        return new - old
+    log.warning(f"Counter reset detected for VM {vm_id} metric '{metric}' "
+                f"(old={old}, new={new}) - ZVM may have rebooted. Publishing raw value.")
+    return new
+
+
 def GetStatsFunc(zvm_instance):
     tempdb = TinyDB(storage=MemoryStorage)
     dbvm = Query()
@@ -194,22 +204,23 @@ def GetStatsFunc(zvm_instance):
                             log.debug(vm)
                             log.debug("!@!@!@!@!@  Stats  !@!@!@!@!@")
                             VMName                            = oldvmdata[0]['VmName']
+                            vid                               = vm['VmIdentifier']
                             log.debug("Current VM " + str(VMName))
-                            CurrentIops                       = abs(vm['IoOperationsCounter'] - oldvmdata[0]['IoOperationsCounter'])
+                            CurrentIops                       = _counter_delta(vm['IoOperationsCounter'],                    oldvmdata[0]['IoOperationsCounter'],                    vid, 'IoOperationsCounter')
                             log.debug("CurrentIops " + str(CurrentIops))
-                            CurrentSyncCounterInMBs           = abs(vm['SyncCounterInMBs'] - oldvmdata[0]['SyncCounterInMBs'])
+                            CurrentSyncCounterInMBs           = _counter_delta(vm['SyncCounterInMBs'],                       oldvmdata[0]['SyncCounterInMBs'],                       vid, 'SyncCounterInMBs')
                             log.debug("CurrentSyncCounterInMBs " + str(CurrentSyncCounterInMBs))
-                            CurrentNetworkTrafficCounterInMBs = abs(vm['NetworkTrafficCounterInMBs'] - oldvmdata[0]['NetworkTrafficCounterInMBs'])
+                            CurrentNetworkTrafficCounterInMBs = _counter_delta(vm['NetworkTrafficCounterInMBs'],              oldvmdata[0]['NetworkTrafficCounterInMBs'],              vid, 'NetworkTrafficCounterInMBs')
                             log.debug("CurrentNetworkTrafficCounterInMBs " + str(CurrentNetworkTrafficCounterInMBs))
-                            CurrentWriteCounterInMBs          = abs(vm['WriteCounterInMBs'] - oldvmdata[0]['WriteCounterInMBs'])
+                            CurrentWriteCounterInMBs          = _counter_delta(vm['WriteCounterInMBs'],                      oldvmdata[0]['WriteCounterInMBs'],                      vid, 'WriteCounterInMBs')
                             log.debug("CurrentWriteCounterInMBs " + str(CurrentWriteCounterInMBs))
-                            CurrentEncryptedLBs               = abs(vm['EncryptionMetrics']['EncryptedData'] - oldvmdata[0]['EncryptionMetrics']['EncryptedData'])
+                            CurrentEncryptedLBs               = _counter_delta(vm['EncryptionMetrics']['EncryptedData'],     oldvmdata[0]['EncryptionMetrics']['EncryptedData'],     vid, 'EncryptedData')
                             log.debug("CurrentEncryptedLBs " + str(CurrentEncryptedLBs))
-                            CurrentUnencryptedLBs             = abs(vm['EncryptionMetrics']['NonEncryptedData'] - oldvmdata[0]['EncryptionMetrics']['NonEncryptedData'])
+                            CurrentUnencryptedLBs             = _counter_delta(vm['EncryptionMetrics']['NonEncryptedData'],  oldvmdata[0]['EncryptionMetrics']['NonEncryptedData'],  vid, 'NonEncryptedData')
                             log.debug("CurrentUnencryptedLBs " + str(CurrentUnencryptedLBs))
-                            CurrentTrendChangeLevel           = abs(vm['EncryptionMetrics']['TrendChangeLevel'] - oldvmdata[0]['EncryptionMetrics']['TrendChangeLevel'])
+                            CurrentTrendChangeLevel           = _counter_delta(vm['EncryptionMetrics']['TrendChangeLevel'],  oldvmdata[0]['EncryptionMetrics']['TrendChangeLevel'],  vid, 'TrendChangeLevel')
                             log.debug("CurrentTrendChangeLevel " + str(CurrentTrendChangeLevel))
-                            CurrentTotalLBs                   = abs(CurrentEncryptedLBs + CurrentUnencryptedLBs)
+                            CurrentTotalLBs                   = CurrentEncryptedLBs + CurrentUnencryptedLBs
                             log.debug("CurrentTotalLBs " + str(CurrentTotalLBs))
                             if CurrentTotalLBs != 0:
                                 CurrentPercentEncrypted       = (CurrentEncryptedLBs / CurrentTotalLBs) * 100
