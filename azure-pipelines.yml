@@ -37,6 +37,6 @@ stages:
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: |
-          $(Build.BuildId)
           $(semanticVersion)
+          stable
           latest
