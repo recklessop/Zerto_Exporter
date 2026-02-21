@@ -462,6 +462,12 @@ def GetVraMetrics(zvm_instance):
 
                 if vras_json is not None:
                     log.debug("VRA names: %s", vras_json)
+                    # Clear stale label sets so upgraded VRAs don't appear twice
+                    for g in (g_vra_memory, g_vra_vcpu_count, g_vra_protected_vms,
+                              g_vra_protected_vpgs, g_vra_protected_vols,
+                              g_vra_recovery_vms, g_vra_recovery_vpgs, g_vra_recovery_vols,
+                              g_vra_self_protected, g_vra_cpu_usage, g_vra_memory_usage):
+                        g.clear()
                     for vra in vras_json:
                         lbl = dict(
                             VraIdentifierStr=vra['VraIdentifierStr'],
