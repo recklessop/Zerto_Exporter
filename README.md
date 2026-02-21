@@ -7,12 +7,14 @@ A Python-based Prometheus exporter that scrapes the Zerto ZVM Appliance (ZVMA) R
 | Component | Supported Versions |
 |---|---|
 | Zerto | ZVM Appliance (ZVMA) 10.x |
-| vCenter | 7.x, 8.x |
+| vCenter / vSphere | 7.x, 8.x, 9.x (VCF 9) |
 | pyvmomi | 9.0.0.0 |
 | Prometheus | Any current release |
 | Grafana | Any current release |
 
 > **Note:** This exporter targets the ZVMA API (Keycloak-based authentication). It is **not** compatible with the legacy Windows-based ZVM.
+
+> **pyvmomi and vSphere 9:** pyvmomi 9.0.0.0 supports vSphere 9.0 and maintains backward compatibility with the previous four vSphere releases (8.0, 8.0U1, 8.0U2, 8.0U3). Note that Broadcom has announced pyvmomi 9.0.0.0 is the last standalone release — future versions will be distributed as part of the unified [VCF Python SDK](https://developer.broadcom.com/vcf-python-sdk). This exporter will be updated accordingly when that becomes necessary.
 
 ## Quick Start
 
