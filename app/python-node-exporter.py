@@ -94,7 +94,7 @@ g_ds_zerto_appliances_used        = Gauge('datastore_usage_zerto_appliances_used
 g_ds_zerto_appliances_provisioned = Gauge('datastore_usage_zerto_appliances_provisionedinbytes', 'Datastore Zerto Appliances Provisioned In Bytes',        _DS_LABELS)
 
 # VM metrics (GetDataFunc - VMs section)
-_VM_LABELS = ['VmIdentifier', 'VmName', 'VmRecoveryVRA', 'VmPriority', 'SiteIdentifier', 'VpgName', 'SiteName']
+_VM_LABELS = ['VmIdentifier', 'VmName', 'VmSourceVRA', 'VmRecoveryVRA', 'VmPriority', 'SiteIdentifier', 'VpgName', 'SiteName']
 g_vm_actualrpo             = Gauge('vm_actualrpo',                  'VM Actual RPO',                 _VM_LABELS)
 g_vm_throughput            = Gauge('vm_throughput_in_mb',           'VM Throughput In MB',           _VM_LABELS)
 g_vm_iops                  = Gauge('vm_iops',                       'VM IOPs',                       _VM_LABELS)
@@ -337,6 +337,12 @@ def GetDataFunc(zvm_instance):
             else:
                 log.debug("No Datastores Found")
 
+            ## Build host → VRA name lookup for source/recovery VRA labels
+            host_to_vra = {}
+            vras_for_lookup = zvm.vras()
+            if vras_for_lookup:
+                host_to_vra = {v['HostDisplayName']: v['VraName'] for v in vras_for_lookup}
+
             ## VMs API
             log.debug("Getting VMs API")
             vms_json = zvm.vms()
@@ -355,7 +361,8 @@ def GetDataFunc(zvm_instance):
                         lbl = dict(
                             VmIdentifier=str(vm['VmIdentifier']),
                             VmName=str(vm['VmName']),
-                            VmRecoveryVRA=str(vm["RecoveryHostName"]),
+                            VmSourceVRA=host_to_vra.get(str(vm['OwningHostName']), ''),
+                            VmRecoveryVRA=host_to_vra.get(str(vm['RecoveryHostName']), ''),
                             VmPriority=str(vm['Priority']),
                             SiteIdentifier=str(siteId),
                             VpgName=str(vm['VpgName']),
