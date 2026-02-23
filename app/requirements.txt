@@ -15,7 +15,7 @@ pyvim==3.0.3
 pyvmomi==9.0.0.0
 requests>=2.32.4
 six==1.16.0
-tinydb==4.8.0
+tinydb==4.8.2
 typing_extensions>=4.12.2
 urllib3>=2.6.3
 wcwidth==0.2.8
