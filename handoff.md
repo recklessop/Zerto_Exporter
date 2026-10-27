@@ -188,8 +188,8 @@ doesn't show up twice.
 `vcenter.py` also has `get_write_iops()` and `get_average_write_latency()`, which query vSphere
 perf counters, but **nothing calls them and no metric is published from them**. They use hardcoded
 counter IDs (6 and 10), which differ between vCenters and are wrong for those purposes anyway. If
-you wire them up, look counters up by name (`virtualDisk.numberWriteAveraged.average`,
-`virtualDisk.totalWriteLatency.average`) with `instance="*"`.
+you wire them up, use the counter names in
+[section 8](#8-vsphere-disk-counters-reference-not-exported-yet) instead.
 
 ## 7. Exporter health (Probe thread)
 
@@ -197,6 +197,110 @@ you wire them up, look counters up by name (`virtualDisk.numberWriteAveraged.ave
 |---|---|---|
 | `exporter_uptime` | `ExporterInstance` (container hostname) | Minutes since the exporter started. |
 | `exporter_thread_status` | `thread`, `ExporterInstance` | 1 = alive, 0 = dead. `thread` is `DataStats`, `EncryptionStats` or `VraMetrics`. |
+
+## 8. vSphere disk counters (reference, not exported yet)
+
+The exporter doesn't publish any of these today. They're the pyVmomi perf counters to use if you
+want vSphere's own view of IOPS and throughput per disk or per VM. That view is different from
+Zerto's `vm_iops`, which counts only replicated writes.
+
+Counter names are `group.name.rollup`, built from each counter's `groupInfo.key`, `nameInfo.key`
+and `rollupType`. **Don't hardcode counter IDs.** vCenter assigns them per installation, and an
+ESXi host can number them differently from its vCenter. Look the IDs up by name on whatever
+endpoint you connect to.
+
+### Per virtual disk
+
+Query the VM with `instance="*"`. You get one series per disk, with the instance set to the bus
+address (`scsi0:0`, `nvme0:1`, …).
+
+| Counter | Measures | Unit |
+|---|---|---|
+| `virtualDisk.numberReadAveraged.average` | Read IOPS | IO/s |
+| `virtualDisk.numberWriteAveraged.average` | Write IOPS | IO/s |
+| `virtualDisk.read.average` | Read throughput | KB/s |
+| `virtualDisk.write.average` | Write throughput | KB/s |
+| `virtualDisk.totalReadLatency.average` | Read latency | ms |
+| `virtualDisk.totalWriteLatency.average` | Write latency | ms |
+
+### Per VM total
+
+Query the VM with `instance=""` to get the VM-wide total.
+
+| Counter | Measures | Unit |
+|---|---|---|
+| `disk.numberReadAveraged.average` | Read IOPS | IO/s |
+| `disk.numberWriteAveraged.average` | Write IOPS | IO/s |
+| `disk.commandsAveraged.average` | Total IOPS | IO/s |
+| `disk.read.average` / `disk.write.average` | Read / write throughput | KB/s |
+| `disk.usage.average` | Total throughput | KB/s |
+
+The `disk.*` counters track physical device IO, so they can come back empty for VMs on NFS or
+vSAN. The `virtualDisk.*` counters work on any storage. For a reliable VM total, query
+`virtualDisk.*` with `instance="*"` and add up the disks.
+
+### Where the data lives
+
+- **Real-time data comes from the ESXi host.** Real-time stats (`intervalId=20`, one sample every
+  20s) are collected on the host. Querying ESXi directly gets you about the last hour. Querying
+  vCenter gives the same data: vCenter fetches it from the host that runs the VM.
+- **Historical rollups are vCenter-only.** The 5 min, 30 min, 2 h and 1 day rollups are stored in
+  the vCenter database, so you need vCenter for anything older than an hour.
+- **The values are already per-second rates.** `maxSample=3` gives the last minute, and you can
+  average those samples directly.
+
+### Example: per-disk stats with disk names
+
+The counter instance is a bus address. `disk_labels()` maps it to the disk name vSphere shows
+("Hard disk 2") by matching each disk's controller bus number and unit number.
+
+```python
+from pyVmomi import vim
+
+def counter_ids(perf):
+    return {f"{c.groupInfo.key}.{c.nameInfo.key}.{c.rollupType}": c.key
+            for c in perf.perfCounter}
+
+def disk_labels(vm):
+    """Map perf instance ('scsi0:1') -> disk label ('Hard disk 2')."""
+    devs = vm.config.hardware.device
+    ctrls = {d.key: d for d in devs if isinstance(d, vim.vm.device.VirtualController)}
+    bus = {vim.vm.device.VirtualSCSIController: "scsi",
+           vim.vm.device.VirtualNVMEController: "nvme",
+           vim.vm.device.VirtualSATAController: "sata",
+           vim.vm.device.VirtualIDEController: "ide"}
+    out = {}
+    for d in devs:
+        if isinstance(d, vim.vm.device.VirtualDisk):
+            c = ctrls[d.controllerKey]
+            prefix = next(p for t, p in bus.items() if isinstance(c, t))
+            out[f"{prefix}{c.busNumber}:{d.unitNumber}"] = d.deviceInfo.label
+    return out
+
+WANT = ["virtualDisk.numberReadAveraged.average", "virtualDisk.numberWriteAveraged.average",
+        "virtualDisk.read.average", "virtualDisk.write.average"]
+
+def disk_stats(si, vm):
+    perf = si.RetrieveContent().perfManager
+    ids = counter_ids(perf)
+    names = {v: k for k, v in ids.items()}
+    spec = vim.PerformanceManager.QuerySpec(
+        entity=vm, intervalId=20, maxSample=3,          # 3 x 20s = last minute
+        metricId=[vim.PerformanceManager.MetricId(counterId=ids[n], instance="*") for n in WANT])
+    labels = disk_labels(vm)
+    result = perf.QueryStats(querySpec=[spec])
+    if not result:                                      # powered off / no data
+        return {}
+    stats = {}
+    for s in result[0].value:
+        disk = labels.get(s.id.instance, s.id.instance)
+        stats.setdefault(disk, {})[names[s.id.counterId]] = sum(s.value) / len(s.value)
+    return stats
+```
+
+This returns a dict like `{"Hard disk 1": {"virtualDisk.numberWriteAveraged.average": 42.0, ...}}`.
+It works the same against vCenter or ESXi. The snippet hasn't been run against a live vCenter yet:
+check the `nvme` and `sata` instance prefixes first on a VM that has those controllers.
 
 ---
 
